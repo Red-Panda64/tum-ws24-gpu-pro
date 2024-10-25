@@ -19,3 +19,6 @@ FetchContent_MakeAvailable(tga)
 
 add_executable(gpupro src/main.cpp)
 target_link_libraries(gpupro PRIVATE tga_vulkan PRIVATE tga_utils)
+
+add_subdirectory(shaders)
+add_dependencies(gpupro shaders)
