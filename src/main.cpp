@@ -193,6 +193,8 @@ int main(int argc, const char *argv[])
 
     auto cp = tgai.createComputePass({cs, computeInputLayout});
 
+    Mesh windowMesh{tgai, "../assets/window.obj", vertexLayout};
+
     // Create the Render pass
     auto rpInfo = tga::RenderPassInfo{vs, fs, win}
         .setClearOperations(tga::ClearOperation::all)
