@@ -1,0 +1,3 @@
+[submodule "external/TGA"]
+	path = external/TGA
+	url = git@gitlab.lrz.de:tuini15/gpu-pro/public/TGA.git
