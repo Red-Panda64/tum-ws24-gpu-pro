@@ -186,6 +186,8 @@ int main(int argc, const char *argv[])
     // Load shader code from file
     auto vs = tga::loadShader("../shaders/mesh_vert.spv", tga::ShaderType::vertex, tgai);
     auto fs = tga::loadShader("../shaders/mesh_frag.spv", tga::ShaderType::fragment, tgai);
+    auto shadow_vs = tga::loadShader("../shaders/shadow_vert.spv", tga::ShaderType::vertex, tgai);
+    auto shadow_fs = tga::loadShader("../shaders/shadow_frag.spv", tga::ShaderType::fragment, tgai);
 
     //auto cs = tga::loadShader("../shaders/compute_transforms_comp.spv", tga::ShaderType::compute, tgai);
     //tga::SetLayout computeSetLayout = tga::SetLayout{ {tga::BindingType::storageBuffer}, {tga::BindingType::storageBuffer}, {tga::BindingType::uniformBuffer} };
@@ -204,6 +206,17 @@ int main(int argc, const char *argv[])
     tga::StagingBuffer planeStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(planeTransform))});
     tga::Buffer planeTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), planeStagingBuffer, 0 });
     
+    constexpr uint32_t SHADOW_MAP_RESX = 1024;
+    constexpr uint32_t SHADOW_MAP_RESY = 1024;
+    tga::Texture shadowMap = tgai.createTexture({SHADOW_MAP_RESX, SHADOW_MAP_RESY, tga::Format::r32_sfloat, tga::SamplerMode::linear,
+                     tga::AddressMode::clampBorder}); // TODO: how to set border color?
+
+    auto shadowrpInfo = tga::RenderPassInfo{shadow_vs, shadow_fs, shadowMap} // Unfortunately, this "render target" is essentially a redundant depth buffer
+        .setClearOperations(tga::ClearOperation::all)
+        .setPerPixelOperations(tga::PerPixelOperations{}.setDepthCompareOp(tga::CompareOperation::lessEqual))
+        .setRasterizerConfig(tga::RasterizerConfig().setFrontFace(tga::FrontFace::counterclockwise).setCullMode(tga::CullMode::back))
+        .setInputLayout({ meshDescriptorLayout })
+        .setVertexLayout(vertexLayout);
 
     // Create the Render pass
     auto rpInfo = tga::RenderPassInfo{vs, fs, win}
@@ -212,7 +225,6 @@ int main(int argc, const char *argv[])
         .setRasterizerConfig(tga::RasterizerConfig().setFrontFace(tga::FrontFace::counterclockwise).setCullMode(tga::CullMode::back))
         .setInputLayout({ meshDescriptorLayout })
         .setVertexLayout(vertexLayout);
-
     auto rp = tgai.createRenderPass(rpInfo);
     Drawable windowDrawable{tgai, windowMesh, rp};
     tga::InputSet windowTransformInputSet = tgai.createInputSet({rp, { tga::Binding(windowTransformBuffer) }, 2});
