@@ -194,11 +194,16 @@ int main(int argc, const char *argv[])
 
     Mesh windowMesh{tgai, "../assets/window.obj", vertexLayout};
     glm::mat4 windowTransform = glm::mat4(1.0);
-    windowTransform[0][0] = 5.0;
-    windowTransform[1][1] = 5.0;
-    windowTransform[2][2] = 5.0;
-    tga::StagingBuffer stagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(windowTransform))});
-    tga::Buffer transformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), stagingBuffer, 0 });
+    windowTransform = glm::scale(windowTransform, glm::vec3(5.0, 5.0, 5.0));
+    // TODO: use single buffer
+    tga::StagingBuffer windowStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(windowTransform))});
+    tga::Buffer windowTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), windowStagingBuffer, 0 });
+    Mesh planeMesh{tgai, "../assets/plane.obj", vertexLayout};
+    glm::mat4 planeTransform = glm::mat4(1.0);
+    planeTransform = glm::scale(planeTransform, glm::vec3(100.0, 100.0, 100.0));
+    tga::StagingBuffer planeStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(planeTransform))});
+    tga::Buffer planeTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), planeStagingBuffer, 0 });
+    
 
     // Create the Render pass
     auto rpInfo = tga::RenderPassInfo{vs, fs, win}
@@ -210,7 +215,9 @@ int main(int argc, const char *argv[])
 
     auto rp = tgai.createRenderPass(rpInfo);
     Drawable windowDrawable{tgai, windowMesh, rp};
-    tga::InputSet transformInputSet = tgai.createInputSet({rp, { tga::Binding(transformBuffer) }, 2});
+    tga::InputSet windowTransformInputSet = tgai.createInputSet({rp, { tga::Binding(windowTransformBuffer) }, 2});
+    Drawable planeDrawable{tgai, planeMesh, rp};
+    tga::InputSet planeTransformInputSet = tgai.createInputSet({rp, { tga::Binding(planeTransformBuffer) }, 2});
 
     // Create scene (global) input (descriptor) set
     scene.createSceneInputSet(tgai, rp);
@@ -225,14 +232,17 @@ int main(int argc, const char *argv[])
             tga::CommandRecorder recorder = tga::CommandRecorder{ tgai, cmdBuffers[i] };
             // Scene Buffer is global and every mesh using the pipeline (we only have 1) uses the same buffer so loading it once per frame.
             scene.bufferUpload(recorder);
-            recorder.bufferUpload(stagingBuffer, transformBuffer, sizeof(glm::mat4));
+            recorder.bufferUpload(windowStagingBuffer, windowTransformBuffer, sizeof(glm::mat4));
+            recorder.bufferUpload(planeStagingBuffer, planeTransformBuffer, sizeof(glm::mat4));
 
             recorder.barrier(tga::PipelineStage::Transfer, tga::PipelineStage::VertexShader);
 
             recorder.setRenderPass(rp, i, {0.0, 0.0, 0.0, 1.0});
             scene.bindSceneInputSet(recorder);
-            recorder.bindInputSet(transformInputSet);
+            recorder.bindInputSet(windowTransformInputSet);
             windowDrawable.draw(recorder);
+            recorder.bindInputSet(planeTransformInputSet);
+            planeDrawable.draw(recorder);
 
             cmdBuffers[i] = recorder.endRecording();
         }
