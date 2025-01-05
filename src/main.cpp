@@ -9,11 +9,13 @@
 #include <sstream>
 
 
+#include "glm/gtc/type_ptr.hpp"
 #include "tga/tga.hpp"
 #include "tga/tga_utils.hpp"
 
 #include "Mesh.h"
 #include "Scene.h"
+#include "Drawable.h"
 
 #define INSTANCE_COUNT 2048
 #define PLACING_RADIUS 3000.0f
@@ -173,27 +175,30 @@ int main(int argc, const char *argv[])
             {offsetof(tga::Vertex, tangent), tga::Format::r32g32b32_sfloat},
         }
     );
-
-    constexpr size_t batchSize = 512;
     
     // Prepare the Input (whole collection of sets) Layout (Descriptor Set(s))
-    // Set 0: Global Scene Data, Set 1: Textures for all the meshes (2 textures per mesh) Set3: Per Instance Transform Data (This is a storage buffer not a uniform buffer)
+    // Set 0: Global Scene Data, Set 1: mesh data, Set 2: object data
     tga::SetLayout meshDescriptorSet0Layout = tga::SetLayout{ {tga::BindingType::uniformBuffer} };
-    tga::SetLayout meshDescriptorSet1Layout = tga::SetLayout{ {tga::BindingType::sampler, static_cast<uint32_t>(batchSize * 2)} };
-    tga::SetLayout meshDescriptorSet2Layout = tga::SetLayout{ {tga::BindingType::storageBuffer} };
-    tga::InputLayout meshDescriptorLayout = tga::InputLayout({ meshDescriptorSet0Layout, meshDescriptorSet1Layout, meshDescriptorSet2Layout});
+    tga::SetLayout meshDescriptorSet1Layout = tga::SetLayout{ {tga::BindingType::sampler, tga::BindingType::sampler} };
+    tga::SetLayout meshDescriptorSet2Layout = tga::SetLayout{ {tga::BindingType::uniformBuffer} };
+    tga::InputLayout meshDescriptorLayout = tga::InputLayout( { meshDescriptorSet0Layout, meshDescriptorSet1Layout, meshDescriptorSet2Layout } );
 
     // Load shader code from file
-    auto vs = tga::loadShader("../shaders/mesh_multidraw_vert.spv", tga::ShaderType::vertex, tgai);
-    auto fs = tga::loadShader("../shaders/mesh_multidraw_frag.spv", tga::ShaderType::fragment, tgai);
-    auto cs = tga::loadShader("../shaders/compute_transforms_comp.spv", tga::ShaderType::compute, tgai);
+    auto vs = tga::loadShader("../shaders/mesh_vert.spv", tga::ShaderType::vertex, tgai);
+    auto fs = tga::loadShader("../shaders/mesh_frag.spv", tga::ShaderType::fragment, tgai);
 
-    tga::SetLayout computeSetLayout = tga::SetLayout{ {tga::BindingType::storageBuffer}, {tga::BindingType::storageBuffer}, {tga::BindingType::uniformBuffer} };
-    tga::InputLayout computeInputLayout = tga::InputLayout({ computeSetLayout });
-
-    auto cp = tgai.createComputePass({cs, computeInputLayout});
+    //auto cs = tga::loadShader("../shaders/compute_transforms_comp.spv", tga::ShaderType::compute, tgai);
+    //tga::SetLayout computeSetLayout = tga::SetLayout{ {tga::BindingType::storageBuffer}, {tga::BindingType::storageBuffer}, {tga::BindingType::uniformBuffer} };
+    //tga::InputLayout computeInputLayout = tga::InputLayout({ computeSetLayout });
+    //auto cp = tgai.createComputePass({cs, computeInputLayout});
 
     Mesh windowMesh{tgai, "../assets/window.obj", vertexLayout};
+    glm::mat4 windowTransform = glm::mat4(1.0);
+    windowTransform[0][0] = 5.0;
+    windowTransform[1][1] = 5.0;
+    windowTransform[2][2] = 5.0;
+    tga::StagingBuffer stagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(windowTransform))});
+    tga::Buffer transformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), stagingBuffer, 0 });
 
     // Create the Render pass
     auto rpInfo = tga::RenderPassInfo{vs, fs, win}
@@ -204,6 +209,8 @@ int main(int argc, const char *argv[])
         .setVertexLayout(vertexLayout);
 
     auto rp = tgai.createRenderPass(rpInfo);
+    Drawable windowDrawable{tgai, windowMesh, rp};
+    tga::InputSet transformInputSet = tgai.createInputSet({rp, { tga::Binding(transformBuffer) }, 2});
 
     // Create scene (global) input (descriptor) set
     scene.createSceneInputSet(tgai, rp);
@@ -211,22 +218,21 @@ int main(int argc, const char *argv[])
     std::vector<tga::CommandBuffer> cmdBuffers(tgai.backbufferCount(win));
     auto rebuildCmdBuffers = [&]() {
         // Prepare the command buffers
-        for(int i = 0; i < cmdBuffers.size(); ++i)
+        for(size_t i = 0; i < cmdBuffers.size(); ++i)
         {
             tgai.free(cmdBuffers[i]);
             cmdBuffers[i] = {};
             tga::CommandRecorder recorder = tga::CommandRecorder{ tgai, cmdBuffers[i] };
             // Scene Buffer is global and every mesh using the pipeline (we only have 1) uses the same buffer so loading it once per frame.
             scene.bufferUpload(recorder);
-
-            //TODO: upload data
+            recorder.bufferUpload(stagingBuffer, transformBuffer, sizeof(glm::mat4));
 
             recorder.barrier(tga::PipelineStage::Transfer, tga::PipelineStage::VertexShader);
 
-            recorder.setRenderPass(rp, i);
+            recorder.setRenderPass(rp, i, {0.0, 0.0, 0.0, 1.0});
             scene.bindSceneInputSet(recorder);
-
-            //TODO: commands for drawing
+            recorder.bindInputSet(transformInputSet);
+            windowDrawable.draw(recorder);
 
             cmdBuffers[i] = recorder.endRecording();
         }

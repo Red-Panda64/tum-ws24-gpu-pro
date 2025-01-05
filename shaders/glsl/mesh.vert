@@ -32,14 +32,10 @@ layout(set = 0, binding = 0) uniform Scene
     float ambientFactor;
 } scene;
 
-// Each mesh has 2 textures (diffuse and specular). Each mesh, can fetch its textures with index: 2 * gl_drawID
-layout(set = 1, binding = 0) uniform sampler2D textures[];
-
-// Per-Instance Transform Matrices. Index with gl_InstanceID
-layout(set = 2, binding = 0) readonly buffer ModelTransforms
+layout(set = 2, binding = 0) uniform ModelTransforms
 {
-    mat4 model[];
-} modelTransforms;
+    mat4 model;
+} modelTransform;
 
 
 layout(location = 0) out VOut
@@ -47,15 +43,13 @@ layout(location = 0) out VOut
     vec3 normal;
     vec3 fragWorldPos; // for light calculations
     vec2 uv;
-    flat int drawID;
 } vOut;
 
 void main()
 {
-    vec4 intermediateWorldPos = modelTransforms.model[gl_InstanceIndex] * vec4(vertex_position, 1.0);
-    vOut.normal = mat3(inverse(transpose(modelTransforms.model[gl_InstanceIndex]))) * vertex_normal;
+    vec4 intermediateWorldPos = modelTransform.model * vec4(vertex_position, 1.0);
+    vOut.normal = mat3(inverse(transpose(modelTransform.model))) * vertex_normal;
     vOut.fragWorldPos = vec3(intermediateWorldPos);
     vOut.uv = vertex_uv;
-    vOut.drawID = gl_DrawID;
     gl_Position = scene.projectionView * intermediateWorldPos;
 }

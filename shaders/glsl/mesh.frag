@@ -25,23 +25,17 @@ layout(set = 0, binding = 0) uniform Scene
     float ambientFactor;
 } scene;
 
-// Each mesh has 2 textures (diffuse and specular). Each mesh, can fetch its textures with index: 2 * gl_drawID
-layout(set = 1, binding = 0) uniform sampler2D textures[];
+layout(set = 1, binding = 0) uniform sampler2D diffuseTexture;
+layout(set = 1, binding = 1) uniform sampler2D specularTexture;
 
 layout(location = 0) in VIn
 {
     vec3 normal;
     vec3 fragWorldPos; // for light calculations
 	vec2 uv;
-    flat int drawID;
 } vIn;
 
-
 layout(location = 0) out vec4 color;
-
-int diffuseTextureIndex = 2 * vIn.drawID;
-int specularTextureIndex = 2 * vIn.drawID + 1;
-
 
 vec3 calculateDirLight(DirLight light, vec3 normal, vec3 fragToCamera, vec3 diffuseTextureValue, vec3 specularTextureValue)
 {
@@ -93,8 +87,8 @@ void main()
 	vec3 n = normalize(vIn.normal);
 	vec3 fragToCamera = normalize(scene.camPos - vIn.fragWorldPos);
 
-	vec3 diffuseTextureValue = vec3(texture(textures[diffuseTextureIndex], vIn.uv));
-	vec3 specularTextureValue = vec3(texture(textures[specularTextureIndex], vIn.uv));
+	vec3 diffuseTextureValue = vec3(texture(diffuseTexture, vIn.uv));
+	vec3 specularTextureValue = vec3(texture(specularTexture, vIn.uv));
 
 	vec3 result = calculateDirLight(scene.dirLight, n, fragToCamera, diffuseTextureValue, specularTextureValue);
 
