@@ -4,7 +4,7 @@
 
 class Drawable {
 public:
-    Drawable(tga::Interface &tgai, const Mesh &mesh, tga::RenderPass drawPass);
+    Drawable(tga::Interface &tgai, const Mesh &mesh);
     ~Drawable();
 
     Drawable(const Drawable &other) = delete;
@@ -18,5 +18,4 @@ private:
     tga::Interface *tgai;
     tga::Buffer vertexBuffer;
     tga::Buffer indexBuffer;
-    tga::InputSet meshInputSet;
 };

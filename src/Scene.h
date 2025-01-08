@@ -49,6 +49,8 @@ public:
     void moveCameraZDir(float direction, float deltaTime, float speed);
     void rotateCameraWithMouseInput(double xPos, double yPos);
     void updateCameraLastMousePos(double x, double y);
+    const glm::mat4 &viewProjection() const;
+    const DirLight &dirLight() const;
 private:
     Camera camera;
     tga::StagingBuffer sceneStagingBuffer;

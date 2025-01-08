@@ -94,3 +94,12 @@ void Scene::updateCameraLastMousePos(double x, double y)
 	camera.updateLastMousePos(x, y);
 }
 
+const glm::mat4 &Scene::viewProjection() const
+{
+    return pSceneStagingBuffer->projectionView;
+}
+
+const DirLight &Scene::dirLight() const
+{
+    return pSceneStagingBuffer->dirLight;
+}

@@ -16,6 +16,7 @@
 #include "Mesh.h"
 #include "Scene.h"
 #include "Drawable.h"
+#include "ShadowPass.h"
 
 #define INSTANCE_COUNT 2048
 #define PLACING_RADIUS 3000.0f
@@ -152,7 +153,7 @@ int main(int argc, const char *argv[])
     scene.initCamera(glm::vec3(0.0f, 0.0f, 500.0f), glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)));
     scene.setAmbientFactor(0.05f);
     // Directional light
-    scene.setDirLight(glm::vec3(1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 1.0, 1.0f));
+    scene.setDirLight(glm::vec3(1.0f, -1.0f, 1.0f), glm::vec3(1.0f, 1.0, 1.0f));
     static std::mt19937 rng(std::random_device{}());
     for(int i = 0; i < MAX_NR_OF_POINT_LIGHTS; ++i)
     {
@@ -186,8 +187,6 @@ int main(int argc, const char *argv[])
     // Load shader code from file
     auto vs = tga::loadShader("../shaders/mesh_vert.spv", tga::ShaderType::vertex, tgai);
     auto fs = tga::loadShader("../shaders/mesh_frag.spv", tga::ShaderType::fragment, tgai);
-    auto shadow_vs = tga::loadShader("../shaders/shadow_vert.spv", tga::ShaderType::vertex, tgai);
-    auto shadow_fs = tga::loadShader("../shaders/shadow_frag.spv", tga::ShaderType::fragment, tgai);
 
     //auto cs = tga::loadShader("../shaders/compute_transforms_comp.spv", tga::ShaderType::compute, tgai);
     //tga::SetLayout computeSetLayout = tga::SetLayout{ {tga::BindingType::storageBuffer}, {tga::BindingType::storageBuffer}, {tga::BindingType::uniformBuffer} };
@@ -208,15 +207,7 @@ int main(int argc, const char *argv[])
     
     constexpr uint32_t SHADOW_MAP_RESX = 1024;
     constexpr uint32_t SHADOW_MAP_RESY = 1024;
-    tga::Texture shadowMap = tgai.createTexture({SHADOW_MAP_RESX, SHADOW_MAP_RESY, tga::Format::r32_sfloat, tga::SamplerMode::linear,
-                     tga::AddressMode::clampBorder}); // TODO: how to set border color?
-
-    auto shadowrpInfo = tga::RenderPassInfo{shadow_vs, shadow_fs, shadowMap} // Unfortunately, this "render target" is essentially a redundant depth buffer
-        .setClearOperations(tga::ClearOperation::all)
-        .setPerPixelOperations(tga::PerPixelOperations{}.setDepthCompareOp(tga::CompareOperation::lessEqual))
-        .setRasterizerConfig(tga::RasterizerConfig().setFrontFace(tga::FrontFace::counterclockwise).setCullMode(tga::CullMode::back))
-        .setInputLayout({ meshDescriptorLayout })
-        .setVertexLayout(vertexLayout);
+    ShadowPass sp{ tgai, { 1024, 1024 }, vertexLayout };
 
     // Create the Render pass
     auto rpInfo = tga::RenderPassInfo{vs, fs, win}
@@ -226,10 +217,14 @@ int main(int argc, const char *argv[])
         .setInputLayout({ meshDescriptorLayout })
         .setVertexLayout(vertexLayout);
     auto rp = tgai.createRenderPass(rpInfo);
-    Drawable windowDrawable{tgai, windowMesh, rp};
+    Drawable windowDrawable{tgai, windowMesh};
+    tga::InputSet windowInputSet = tgai.createInputSet({ rp, { tga::Binding(windowMesh.diffuseTexture, 0, 0), tga::Binding(windowMesh.specularTexture, 1, 0) }, 1 });
     tga::InputSet windowTransformInputSet = tgai.createInputSet({rp, { tga::Binding(windowTransformBuffer) }, 2});
-    Drawable planeDrawable{tgai, planeMesh, rp};
+    tga::InputSet windowTransformShadowInputSet = tgai.createInputSet({sp.renderPass(), { tga::Binding(windowTransformBuffer, 0, 0) }, 1});
+    Drawable planeDrawable{tgai, planeMesh};
+    tga::InputSet planeInputSet = tgai.createInputSet({ rp, { tga::Binding(planeMesh.diffuseTexture, 0, 0), tga::Binding(planeMesh.specularTexture, 1, 0) }, 1 });
     tga::InputSet planeTransformInputSet = tgai.createInputSet({rp, { tga::Binding(planeTransformBuffer) }, 2});
+    tga::InputSet planeTransformShadowInputSet = tgai.createInputSet({sp.renderPass(), { tga::Binding(planeTransformBuffer, 0, 0) }, 1});
 
     // Create scene (global) input (descriptor) set
     scene.createSceneInputSet(tgai, rp);
@@ -247,13 +242,23 @@ int main(int argc, const char *argv[])
             recorder.bufferUpload(windowStagingBuffer, windowTransformBuffer, sizeof(glm::mat4));
             recorder.bufferUpload(planeStagingBuffer, planeTransformBuffer, sizeof(glm::mat4));
 
+            sp.upload(recorder);
+
             recorder.barrier(tga::PipelineStage::Transfer, tga::PipelineStage::VertexShader);
 
             recorder.setRenderPass(rp, i, {0.0, 0.0, 0.0, 1.0});
             scene.bindSceneInputSet(recorder);
+            recorder.bindInputSet(windowInputSet);
             recorder.bindInputSet(windowTransformInputSet);
             windowDrawable.draw(recorder);
+            recorder.bindInputSet(planeInputSet);
             recorder.bindInputSet(planeTransformInputSet);
+            planeDrawable.draw(recorder);
+
+            sp.bind(recorder, i);
+            recorder.bindInputSet(windowTransformShadowInputSet);
+            windowDrawable.draw(recorder);
+            recorder.bindInputSet(planeTransformShadowInputSet);
             planeDrawable.draw(recorder);
 
             cmdBuffers[i] = recorder.endRecording();
@@ -299,6 +304,7 @@ int main(int argc, const char *argv[])
         sstream << "[FPS]: " << fps << " (Smoothed: " << smoothedFps << ")";
         tgai.setWindowTitle(win, sstream.str());//std::format("[FPS]: {} (Smoothed: {})", fps, smoothedFps));
         processInputs(win, scene, dt);
+        sp.update(scene);
         auto nf = tgai.nextFrame(win);
         auto& cmd = cmdBuffers[nf];
         tgai.execute(cmd);
