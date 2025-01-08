@@ -19,7 +19,7 @@ ShadowPass::ShadowPass(tga::Interface &tgai, std::array<uint32_t, 2> resolution,
     auto shadowrpInfo = tga::RenderPassInfo{shadow_vs, shadow_fs, hShadowMap} // Unfortunately, this "render target" is essentially a redundant depth buffer
         .setClearOperations(tga::ClearOperation::all)
         .setPerPixelOperations(tga::PerPixelOperations{}.setDepthCompareOp(tga::CompareOperation::lessEqual))
-        .setRasterizerConfig(tga::RasterizerConfig{}.setFrontFace(tga::FrontFace::counterclockwise).setCullMode(tga::CullMode::back))
+        .setRasterizerConfig(tga::RasterizerConfig{}.setFrontFace(tga::FrontFace::clockwise).setCullMode(tga::CullMode::back))
         .setInputLayout(descriptorLayout)
         .setVertexLayout(vertexLayout);
     rp = tgai.createRenderPass(shadowrpInfo);
@@ -106,6 +106,7 @@ void ShadowPass::update(const ::Scene &scene)
     }
 
     glm::mat4 perspective = glm::ortho(axisExtents[0][1], axisExtents[0][0], axisExtents[1][1], axisExtents[1][0], -axisExtents[2][1], -axisExtents[2][0]);
+    perspective[2][2] = -perspective[2][2];
     glm::mat4 view = glm::mat4(0.0f);
     view[3][3] = 1.0f;
     for(size_t i = 0; i < 3; i++) {

@@ -205,9 +205,9 @@ int main(int argc, const char *argv[])
     tga::StagingBuffer planeStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(planeTransform))});
     tga::Buffer planeTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), planeStagingBuffer, 0 });
     
-    constexpr uint32_t SHADOW_MAP_RESX = 1024;
-    constexpr uint32_t SHADOW_MAP_RESY = 1024;
-    ShadowPass sp{ tgai, { 1024, 1024 }, vertexLayout };
+    constexpr uint32_t SHADOW_MAP_RESX = 4096;
+    constexpr uint32_t SHADOW_MAP_RESY = 4096;
+    ShadowPass sp{ tgai, { SHADOW_MAP_RESX, SHADOW_MAP_RESY }, vertexLayout };
 
     // Create the Render pass
     auto rpInfo = tga::RenderPassInfo{vs, fs, win}
