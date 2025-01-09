@@ -21,7 +21,7 @@ FogVolumeGenerationPass::FogVolumeGenerationPass(tga::Interface &tgai, std::arra
     tga::StagingBuffer inputStaging = tgai.createStagingBuffer({ sizeof(inputs), reinterpret_cast<uint8_t *>(&inputs) });
     generationInputsBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(inputs), inputStaging });
 
-    auto volumeGenerationShader = tga::loadShader("../shaders/volumetric_fog_comp.spv", tga::ShaderType::vertex, tgai);
+    auto volumeGenerationShader = tga::loadShader("../shaders/volumetric_fog_comp.spv", tga::ShaderType::compute, tgai);
 
     cp = tgai.createComputePass({ volumeGenerationShader, tga::InputLayout{ { tga::BindingType::storageImage, tga::BindingType::sampler, tga::BindingType::uniformBuffer, tga::BindingType::uniformBuffer, tga::BindingType::sampler } } });
     tgai.free(volumeGenerationShader);
