@@ -1,4 +1,5 @@
 #version 460
+#include "shadowmap.h"
 
 struct DirLight
 {
@@ -50,7 +51,8 @@ vec3 calculateDirLight(DirLight light, vec3 normal, vec3 fragToCamera, vec3 diff
 	vec3 diffuse = light.color * diffCoeff * diffuseTextureValue;
 	vec3 specular = light.color * specularCoeff * specularTextureValue;
 
-	return (ambient + diffuse + specular);
+	float shadowValue = getShadowValue(vec4(vIn.fragWorldPos, 1.0f), 0.001f);
+	return (ambient + shadowValue * (diffuse + specular));
 }
 
 vec3 calculatePointLight(PointLight light, vec3 normal, vec3 fragPosition, vec3 fragToCamera, vec3 diffuseTextureValue, vec3 specularTextureValue)

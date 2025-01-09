@@ -19,7 +19,7 @@ ShadowPass::ShadowPass(tga::Interface &tgai, std::array<uint32_t, 2> resolution,
     auto shadowrpInfo = tga::RenderPassInfo{shadow_vs, shadow_fs, hShadowMap} // Unfortunately, this "render target" is essentially a redundant depth buffer
         .setClearOperations(tga::ClearOperation::all)
         .setPerPixelOperations(tga::PerPixelOperations{}.setDepthCompareOp(tga::CompareOperation::lessEqual))
-        .setRasterizerConfig(tga::RasterizerConfig{}.setFrontFace(tga::FrontFace::clockwise).setCullMode(tga::CullMode::back))
+        .setRasterizerConfig(tga::RasterizerConfig{}.setFrontFace(tga::FrontFace::counterclockwise).setCullMode(tga::CullMode::back))
         .setInputLayout(descriptorLayout)
         .setVertexLayout(vertexLayout);
     rp = tgai.createRenderPass(shadowrpInfo);
@@ -37,12 +37,12 @@ ShadowPass::~ShadowPass()
     tgai->free(rp);
 }
 
-void ShadowPass::upload(tga::CommandRecorder &recorder)
+void ShadowPass::upload(tga::CommandRecorder &recorder) const
 {
     recorder.bufferUpload(sceneDataStaging, sceneData, sizeof(Scene));
 }
 
-void ShadowPass::bind(tga::CommandRecorder &recorder, uint32_t nf)
+void ShadowPass::bind(tga::CommandRecorder &recorder, uint32_t nf) const
 {
     recorder.setRenderPass(rp, nf, { 1.0f }, 1.0f);
     recorder.bindInputSet(sceneSet);
@@ -126,4 +126,9 @@ void ShadowPass::update(const ::Scene &scene, float shadowNearDistance, float sh
         }
     }
     this->scene->viewProjection = perspective * view;
+}
+
+tga::InputSet ShadowPass::createInputSet(tga::RenderPass rp) const
+{
+    return tgai->createInputSet({rp, { tga::Binding(sceneData, 0, 0), tga::Binding(hShadowMap, 1, 0) }, 3});
 }

@@ -7,12 +7,13 @@ public:
     ShadowPass(tga::Interface &tgai, std::array<uint32_t, 2> resolution, const tga::VertexLayout &vertexLayout);
     ~ShadowPass();
 
-    void upload(tga::CommandRecorder &recorder);
-    void bind(tga::CommandRecorder &recorder, uint32_t nf);
+    void upload(tga::CommandRecorder &recorder) const;
+    void bind(tga::CommandRecorder &recorder, uint32_t nf) const;
     tga::Texture shadowMap() const;
     tga::RenderPass renderPass() const;
     /* near and far distance ar given as fractions of the view distance */
     void update(const ::Scene &scene, float shadowNearDistance, float shadowFarDistance);
+    tga::InputSet createInputSet(tga::RenderPass rp) const;
 private:
     struct Scene {
         glm::mat4 viewProjection;

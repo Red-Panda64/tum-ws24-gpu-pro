@@ -182,7 +182,8 @@ int main(int argc, const char *argv[])
     tga::SetLayout meshDescriptorSet0Layout = tga::SetLayout{ {tga::BindingType::uniformBuffer} };
     tga::SetLayout meshDescriptorSet1Layout = tga::SetLayout{ {tga::BindingType::sampler, tga::BindingType::sampler} };
     tga::SetLayout meshDescriptorSet2Layout = tga::SetLayout{ {tga::BindingType::uniformBuffer} };
-    tga::InputLayout meshDescriptorLayout = tga::InputLayout( { meshDescriptorSet0Layout, meshDescriptorSet1Layout, meshDescriptorSet2Layout } );
+    tga::SetLayout meshDescriptorSet3Layout = tga::SetLayout{ {tga::BindingType::uniformBuffer, tga::BindingType::sampler} };
+    tga::InputLayout meshDescriptorLayout = tga::InputLayout( { meshDescriptorSet0Layout, meshDescriptorSet1Layout, meshDescriptorSet2Layout, meshDescriptorSet3Layout } );
 
     // Load shader code from file
     auto vs = tga::loadShader("../shaders/mesh_vert.spv", tga::ShaderType::vertex, tgai);
@@ -226,6 +227,8 @@ int main(int argc, const char *argv[])
     tga::InputSet planeTransformInputSet = tgai.createInputSet({rp, { tga::Binding(planeTransformBuffer) }, 2});
     tga::InputSet planeTransformShadowInputSet = tgai.createInputSet({sp.renderPass(), { tga::Binding(planeTransformBuffer, 0, 0) }, 1});
 
+    tga::InputSet shadowMappingInputSet = sp.createInputSet(rp);
+
     // Create scene (global) input (descriptor) set
     scene.createSceneInputSet(tgai, rp);
 
@@ -246,19 +249,20 @@ int main(int argc, const char *argv[])
 
             recorder.barrier(tga::PipelineStage::Transfer, tga::PipelineStage::VertexShader);
 
+            sp.bind(recorder, i);
+            recorder.bindInputSet(windowTransformShadowInputSet);
+            windowDrawable.draw(recorder);
+            recorder.bindInputSet(planeTransformShadowInputSet);
+            planeDrawable.draw(recorder);
+
             recorder.setRenderPass(rp, i, {0.0, 0.0, 0.0, 1.0});
+            recorder.bindInputSet(shadowMappingInputSet);
             scene.bindSceneInputSet(recorder);
             recorder.bindInputSet(windowInputSet);
             recorder.bindInputSet(windowTransformInputSet);
             windowDrawable.draw(recorder);
             recorder.bindInputSet(planeInputSet);
             recorder.bindInputSet(planeTransformInputSet);
-            planeDrawable.draw(recorder);
-
-            sp.bind(recorder, i);
-            recorder.bindInputSet(windowTransformShadowInputSet);
-            windowDrawable.draw(recorder);
-            recorder.bindInputSet(planeTransformShadowInputSet);
             planeDrawable.draw(recorder);
 
             cmdBuffers[i] = recorder.endRecording();
@@ -304,7 +308,7 @@ int main(int argc, const char *argv[])
         sstream << "[FPS]: " << fps << " (Smoothed: " << smoothedFps << ")";
         tgai.setWindowTitle(win, sstream.str());//std::format("[FPS]: {} (Smoothed: {})", fps, smoothedFps));
         processInputs(win, scene, dt);
-        sp.update(scene, 0.01f, 0.04f);
+        sp.update(scene, 0.001f, 0.04f);
         auto nf = tgai.nextFrame(win);
         auto& cmd = cmdBuffers[nf];
         tgai.execute(cmd);
