@@ -1,6 +1,13 @@
 #version 460
 #include "shadowmap.h"
 
+layout(set = 3, binding = 0) uniform DirShadower
+{
+    mat4 lightPV;
+} shadower;
+
+layout(set = 3, binding = 1) uniform sampler2D shadowMap;
+
 struct DirLight
 {
     vec3 direction;
@@ -51,7 +58,7 @@ vec3 calculateDirLight(DirLight light, vec3 normal, vec3 fragToCamera, vec3 diff
 	vec3 diffuse = light.color * diffCoeff * diffuseTextureValue;
 	vec3 specular = light.color * specularCoeff * specularTextureValue;
 
-	float shadowValue = getShadowValue(vec4(vIn.fragWorldPos, 1.0f), 0.001f);
+	float shadowValue = getShadowValue(shadower.lightPV, shadowMap, vec4(vIn.fragWorldPos, 1.0f), 0.001f);
 	return (ambient + shadowValue * (diffuse + specular));
 }
 

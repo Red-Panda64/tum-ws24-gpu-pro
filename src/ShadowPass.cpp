@@ -27,6 +27,8 @@ ShadowPass::ShadowPass(tga::Interface &tgai, std::array<uint32_t, 2> resolution,
     sceneData = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(Scene) });
     scene = reinterpret_cast<Scene *>(tgai.getMapping(sceneDataStaging));
     sceneSet = tgai.createInputSet({ rp, { tga::Binding(sceneData, 0, 0) }, 0 });
+    tgai.free(shadow_vs);
+    tgai.free(shadow_fs);
 }
 
 ShadowPass::~ShadowPass()
@@ -51,6 +53,11 @@ void ShadowPass::bind(tga::CommandRecorder &recorder, uint32_t nf) const
 tga::Texture ShadowPass::shadowMap() const
 {
     return hShadowMap;
+}
+
+tga::Buffer ShadowPass::inputBuffer() const
+{
+    return sceneData;
 }
 
 tga::RenderPass ShadowPass::renderPass() const

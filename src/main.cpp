@@ -17,6 +17,7 @@
 #include "Scene.h"
 #include "Drawable.h"
 #include "ShadowPass.h"
+#include "FogVolumeGenerationPass.h"
 
 #define INSTANCE_COUNT 2048
 #define PLACING_RADIUS 3000.0f
@@ -209,6 +210,7 @@ int main(int argc, const char *argv[])
     constexpr uint32_t SHADOW_MAP_RESX = 4096;
     constexpr uint32_t SHADOW_MAP_RESY = 4096;
     ShadowPass sp{ tgai, { SHADOW_MAP_RESX, SHADOW_MAP_RESY }, vertexLayout };
+    FogVolumeGenerationPass fp {tgai, { 512, 256, 128 }, sp};
 
     // Create the Render pass
     auto rpInfo = tga::RenderPassInfo{vs, fs, win}
@@ -249,12 +251,17 @@ int main(int argc, const char *argv[])
 
             recorder.barrier(tga::PipelineStage::Transfer, tga::PipelineStage::VertexShader);
 
+            // Shadow pass
             sp.bind(recorder, i);
             recorder.bindInputSet(windowTransformShadowInputSet);
             windowDrawable.draw(recorder);
             recorder.bindInputSet(planeTransformShadowInputSet);
             planeDrawable.draw(recorder);
 
+            // Volume compute pass
+            fp.execute(recorder, i);
+
+            // Forward pass
             recorder.setRenderPass(rp, i, {0.0, 0.0, 0.0, 1.0});
             recorder.bindInputSet(shadowMappingInputSet);
             scene.bindSceneInputSet(recorder);

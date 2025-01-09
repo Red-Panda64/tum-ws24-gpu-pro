@@ -1,15 +1,7 @@
 
-layout(set = 3, binding = 0) uniform DirShadower
-{
-    mat4 projectionView;
-} shadower;
-
-//layout(set = 3, binding = 1) uniform sampler2Dshadow shadowMap;
-layout(set = 3, binding = 1) uniform sampler2D shadowMap;
-
-float getShadowValue(vec4 worldPosition, float bias) {
+float getShadowValue(mat4 lightPV, sampler2D shadowMap, vec4 worldPosition, float bias) {
     // TODO: slope dependent bias
-    vec4 lightspacePositionH = shadower.projectionView * worldPosition;
+    vec4 lightspacePositionH = lightPV * worldPosition;
     vec3 lightspacePosition = lightspacePositionH.xyz / lightspacePositionH.w;
     vec2 shadowUVs = lightspacePosition.xy * 0.5f + vec2(0.5f);
     float smSample;

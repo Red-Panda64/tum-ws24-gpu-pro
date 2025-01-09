@@ -12,6 +12,7 @@ public:
     void upload(tga::CommandRecorder &recorder) const;
     void bind(tga::CommandRecorder &recorder, uint32_t nf) const;
     tga::Texture shadowMap() const;
+    tga::Buffer inputBuffer() const;
     tga::RenderPass renderPass() const;
     /* near and far distance ar given as fractions of the view distance */
     void update(const ::Scene &scene, float shadowNearDistance, float shadowFarDistance);
