@@ -6,6 +6,8 @@ class ShadowPass {
 public:
     ShadowPass(tga::Interface &tgai, std::array<uint32_t, 2> resolution, const tga::VertexLayout &vertexLayout);
     ~ShadowPass();
+    ShadowPass(const ShadowPass&) = delete;
+    ShadowPass &operator=(const ShadowPass&) = delete;
 
     void upload(tga::CommandRecorder &recorder) const;
     void bind(tga::CommandRecorder &recorder, uint32_t nf) const;
