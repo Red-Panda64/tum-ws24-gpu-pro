@@ -140,7 +140,7 @@ glm::mat4 Camera::view() const
 
 glm::mat4 Camera::projection(float aspectRatio) const
 {
-    glm::mat4 projectionMat = glm::perspective(glm::radians(fov), aspectRatio, 0.1f, 1000.f);
+    glm::mat4 projectionMat = glm::perspective(glm::radians(fov), aspectRatio, 0.1f, 10000.f);
     // Vulkan's coordinate system has an inverted y wrt OpenGL
     projectionMat[1][1] *= -1;
     return projectionMat;

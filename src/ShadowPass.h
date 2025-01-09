@@ -11,7 +11,8 @@ public:
     void bind(tga::CommandRecorder &recorder, uint32_t nf);
     tga::Texture shadowMap() const;
     tga::RenderPass renderPass() const;
-    void update(const ::Scene &scene);
+    /* near and far distance ar given as fractions of the view distance */
+    void update(const ::Scene &scene, float shadowNearDistance, float shadowFarDistance);
 private:
     struct Scene {
         glm::mat4 viewProjection;

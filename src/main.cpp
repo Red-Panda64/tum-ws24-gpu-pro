@@ -304,7 +304,7 @@ int main(int argc, const char *argv[])
         sstream << "[FPS]: " << fps << " (Smoothed: " << smoothedFps << ")";
         tgai.setWindowTitle(win, sstream.str());//std::format("[FPS]: {} (Smoothed: {})", fps, smoothedFps));
         processInputs(win, scene, dt);
-        sp.update(scene);
+        sp.update(scene, 0.01f, 0.04f);
         auto nf = tgai.nextFrame(win);
         auto& cmd = cmdBuffers[nf];
         tgai.execute(cmd);

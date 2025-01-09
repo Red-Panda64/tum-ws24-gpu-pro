@@ -58,7 +58,7 @@ tga::RenderPass ShadowPass::renderPass() const
     return rp;
 }
 
-void ShadowPass::update(const ::Scene &scene)
+void ShadowPass::update(const ::Scene &scene, float shadowNearDistance, float shadowFarDistance)
 {
     const glm::mat4 &vp = scene.viewProjection();
     glm::mat4 invVp = glm::inverse(vp);
@@ -98,6 +98,16 @@ void ShadowPass::update(const ::Scene &scene)
     };
     for(size_t i = 0; i < 8; i++) {
         frustumVerts[i] = dehomogenize(invVp * glm::vec4(frustumVerts[i], 1.0));
+    }
+
+    for(size_t i = 0; i < 4; i++) {
+        glm::vec3 near = frustumVerts[i];
+        glm::vec3 far = frustumVerts[i + 4];
+        frustumVerts[i] = glm::mix(near, far, shadowNearDistance);
+        frustumVerts[i + 4] = glm::mix(near, far, shadowFarDistance);
+    }
+
+    for(size_t i = 0; i < 8; i++) {
         for(size_t j = 0; j < 3; j++) {
             float projection = glm::dot(frustumVerts[i], axes[j]);
             axisExtents[j][0] = std::min(axisExtents[j][0], projection);
