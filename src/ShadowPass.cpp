@@ -115,6 +115,9 @@ void ShadowPass::update(const ::Scene &scene, float shadowNearDistance, float sh
         }
     }
 
+    // extend towards lightsource
+    axisExtents[2][1] += 200.0f;
+
     glm::mat4 perspective = glm::ortho(axisExtents[0][1], axisExtents[0][0], axisExtents[1][1], axisExtents[1][0], -axisExtents[2][1], -axisExtents[2][0]);
     perspective[2][2] = -perspective[2][2];
     glm::mat4 view = glm::mat4(0.0f);
