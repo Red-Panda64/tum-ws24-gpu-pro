@@ -258,8 +258,11 @@ int main(int argc, const char *argv[])
             recorder.bindInputSet(planeTransformShadowInputSet);
             planeDrawable.draw(recorder);
 
+            // TODO: Gives validation error: dispatch cannot be called within a renderpass. Barrier did not work neither (which we actually need as we need the shadow map). Should we separate those command buffers and use waitforcompletion?
+            // recorder.barrier(tga::PipelineStage::ColorAttachmentOutput, tga::PipelineStage::ComputeShader);
             // Volume compute pass
             fp.execute(recorder, i);
+            recorder.barrier(tga::PipelineStage::ComputeShader, tga::PipelineStage::VertexInput);
 
             // Forward pass
             recorder.setRenderPass(rp, i, {0.0, 0.0, 0.0, 1.0});

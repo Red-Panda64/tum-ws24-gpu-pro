@@ -1,8 +1,5 @@
 #version 460
 
-#include "shadow_map.h"
-#include "volumetric_fog_util.h"
-
 layout(local_size_x=4, local_size_y=4, local_size_z=4) in;
 
 struct DirLight
@@ -23,7 +20,8 @@ layout(set = 0, binding = 2) uniform VolumeGenerationInputs
     vec3 cameraZAxis;
     DirLight dirLight;
     float time;
-} volumeGenerationInputs;
+    int frameNumber;
+};
 
 layout(set = 0, binding = 3) uniform DirShadower
 {
@@ -31,6 +29,9 @@ layout(set = 0, binding = 3) uniform DirShadower
 };
 
 layout(set = 0, binding = 4) uniform sampler2D shadowMap;
+
+#include "shadow_map.h"
+#include "volumetric_fog_util.h"
 
 float calculateDensityFunction(vec3 worldSpacePos)
 {
@@ -40,8 +41,8 @@ float calculateDensityFunction(vec3 worldSpacePos)
 }
 
 // some generated Poisson-like distribution
-static const uint SAMPLE_NUM = 8;
-static const vec2 POISSON_SAMPLES[SAMPLE_NUM] =
+const uint SAMPLE_NUM = 8;
+const vec2 POISSON_SAMPLES[SAMPLE_NUM] =
 {
     vec2(0.228132254148f, 0.67232428631f),
     vec2(0.848556554824f, 0.135723477704f),
@@ -57,7 +58,7 @@ vec3 getSunLightingRadiance(vec3 worldPosition, vec3 viewDir, float anisotropy)
 {
     float shadow = getShadowValue(lightPV, shadowMap, vec4(worldPosition, 1.0f), 0.001f);
     float sunPhaseFunction = getPhaseFunction(dot(dirLight.direction, viewDir), anisotropy);
-    return shadow  * dirLight.color * sunPhaseFunction;
+    return shadow * dirLight.color * sunPhaseFunction;
 }
 
 vec3 getAmbient(vec3 worldPosition, vec3 viewDir, float anisotropy)
@@ -78,14 +79,16 @@ vec3 getAmbient(vec3 worldPosition, vec3 viewDir, float anisotropy)
     return 0.01f * dirLight.color;
 }
 
+
+
 void main() 
 {
     // bool reprojectionOn = g_VolumetricFogReprojectionOn > 0.5f;
     bool reprojectionOn = false;
+    
+    vec2 currFrameJitter = reprojectionOn ? (POISSON_SAMPLES[(frameNumber + gl_GlobalInvocationID.x + gl_GlobalInvocationID.y * 2) % SAMPLE_NUM] - 0.5f) : vec2(0.0f);
 
-    vec2 currFrameJitter = reprojectionOn ? (POISSON_SAMPLES[(g_FrameNumber + dispatchThreadID.x + dispatchThreadID.y * 2) % SAMPLE_NUM] - 0.5f) : 0.0f;
-
-    vec3 screenCoords = ndcFromThreadID(max((vec3)dispatchThreadID + vec3(currFrameJitter, 0.0f), 0.0f));
+    vec3 screenCoords = ndcFromThreadID(max(vec3(gl_GlobalInvocationID) + vec3(currFrameJitter, 0.0f), 0.0f));
     float linearDepth = volumeZPosToDepth(screenCoords.z);
     float layerThickness = volumeZPosToDepth(screenCoords.z + 1.0f / VOLUME_DEPTH) - linearDepth;
 
@@ -93,23 +96,27 @@ void main()
 
     vec3 worldSpacePos = worldPositionFromNdcCoords(screenCoords.xy, linearDepth);
 
-    float dustDensity = CalculateDensityFunction(worldSpacePos); //InputTexture[dispatchThreadID].x;
-    float scattering = g_VolumetricFogFinalScattering * (0.1f + dustDensity) * layerThickness;
+    float dustDensity = calculateDensityFunction(worldSpacePos); //InputTexture[gl_GlobalInvocationID].x;
+    // float scattering = g_VolumetricFogFinalScattering * (0.1f + dustDensity) * layerThickness;
+    float scattering = (0.1f + dustDensity) * layerThickness;
     float absorbtion = 0.0f * layerThickness;
-    float anisotropy = g_VolumetricFogPhaseAniso;
+    float anisotropy = 0.4;
     vec3 fogAlbedo = vec3(1.0f, 1.0f, 0.9f);
-    vec3 viewDir = normalize(worldSpacePos - g_WorldEyePos.xyz);
+    vec3 viewDir = normalize(worldSpacePos - cameraPos.xyz);
 
-    vec3 lighting = 0.0f;
+    vec3 lighting = vec3(0.0f);
 
-    lighting += GetSunLightingRadiance(worldSpacePos, viewDir, anisotropy);
-    lighting += GetAmbient(worldSpacePos, viewDir, anisotropy);
-    lighting += GetLocalLightsRadiance(worldSpacePos, viewDir, anisotropy);
+    lighting += getSunLightingRadiance(worldSpacePos, viewDir, anisotropy);
+    lighting += getAmbient(worldSpacePos, viewDir, anisotropy);
+    // TODO: Add point light(s)
+    //lighting += GetLocalLightsRadiance(worldSpacePos, viewDir, anisotropy);
 
     lighting *= fogAlbedo;
 
     vec4 finalOutValue = vec4(lighting * scattering, scattering + absorbtion);
 
-    vec4 fogWithReprojection = lerp(finalOutValue, fogPrevFrame, reprojectionValid);
-    OutLightingTexture[dispatchThreadID].rgba = fogWithReprojection;
+    // vec4 fogWithReprojection = lerp(finalOutValue, fogPrevFrame, reprojectionValid);
+    // volumeOut[gl_GlobalInvocationID].rgba = fogWithReprojection;
+    // imageStore(volumeOut, gl_GlobalInvocationID, fogWithReprojection);
+    imageStore(volumeOut, ivec3(gl_GlobalInvocationID), finalOutValue);
 }
