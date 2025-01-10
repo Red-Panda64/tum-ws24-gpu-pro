@@ -1,5 +1,5 @@
 #version 460
-#include "shadowmap.h"
+#include "shadow_map.h"
 
 layout(set = 3, binding = 0) uniform DirShadower
 {
