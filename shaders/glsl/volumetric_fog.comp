@@ -1,5 +1,39 @@
 #version 460
+#extension GL_GOOGLE_include_directive : enable
+/*
+    The MIT License (MIT)
+
+    Copyright (c) 2014 bartwronski
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+*/
+
+#include "shadow_map.h"
+#include "volumetric_fog_util.h"
+
 layout(local_size_x=4, local_size_y=4, local_size_z=4) in;
+
+struct DirLight
+{
+    vec3 direction;
+    vec3 color;
+};
 
 layout(rgba32f, set = 0, binding = 0) uniform writeonly image3D volumeOut;
 layout(set = 0, binding = 1) uniform sampler3D volumeIn;
@@ -7,14 +41,99 @@ layout(set = 0, binding = 1) uniform sampler3D volumeIn;
 layout(set = 0, binding = 2) uniform VolumeGenerationInputs
 {
     uvec3 resolution;
+    vec3 cameraPos;
+    vec3 cameraXAxis;
+    vec3 cameraYAxis;
+    vec3 cameraZAxis;
+    DirLight dirLight;
+    float time;
 } volumeGenerationInputs;
 
 layout(set = 0, binding = 3) uniform DirShadower
 {
     mat4 lightPV;
-} shadower;
+};
+
 layout(set = 0, binding = 4) uniform sampler2D shadowMap;
 
-void main() {
+float calculateDensityFunction(vec3 worldSpacePos)
+{
+    // some procedural effect
+    // return turbulence(worldSpacePos * 0.35f + vec3(time * 0.1f, 0, 0), 2) * exp(-worldSpacePos.y * 0.5f);
+    return exp(-worldSpacePos.y * 0.5f);
+}
 
+// some generated Poisson-like distribution
+static const uint SAMPLE_NUM = 8;
+static const vec2 POISSON_SAMPLES[SAMPLE_NUM] =
+{
+    vec2(0.228132254148f, 0.67232428631f),
+    vec2(0.848556554824f, 0.135723477704f),
+    vec2(0.74820789575f, 0.63965073852f),
+    vec2(0.472544801767f, 0.351474129111f),
+    vec2(0.962881642535f, 0.387342871273f),
+    vec2(0.0875977149838f, 0.896250211998f),
+    vec2(0.203231652569f, 0.12436704431f),
+    vec2(0.56452806916f, 0.974024350484f),
+};
+
+vec3 getSunLightingRadiance(vec3 worldPosition, vec3 viewDir, float anisotropy)
+{
+    float shadow = getShadowValue(lightPV, shadowMap, vec4(worldPosition, 1.0f), 0.001f);
+    float sunPhaseFunction = getPhaseFunction(dot(dirLight.direction, viewDir), anisotropy);
+    return shadow  * dirLight.color * sunPhaseFunction;
+}
+
+vec3 getAmbient(vec3 worldPosition, vec3 viewDir, float anisotropy)
+{
+//    vec3 volumeTexPosition = (worldPosition - g_WorldBoundsMin.xyz) * g_WorldBoundsInvRange.xyz * GI_VOLUME_TEX_SCALE + GI_VOLUME_TEX_BIAS;
+//    vec4 shRed = giVolumeTexR.SampleLevel(linearSampler, volumeTexPosition, 0);
+//    vec4 shGreen = giVolumeTexG.SampleLevel(linearSampler, volumeTexPosition, 0);
+//    vec4 shBlue = giVolumeTexB.SampleLevel(linearSampler, volumeTexPosition, 0);
+//    vec4 shPhaseFunction = GetRotatedPhaseFunctionSH(viewDir, anisotropy);
+//
+//    vec3 lighting = 0.0f;
+//    lighting.r = max(dot(shPhaseFunction, shRed), 0);
+//    lighting.g = max(dot(shPhaseFunction, shGreen), 0);
+//    lighting.b = max(dot(shPhaseFunction, shBlue), 0);
+//    
+//    return lighting;
+
+    return 0.01f * dirLight.color;
+}
+
+void main() 
+{
+    // bool reprojectionOn = g_VolumetricFogReprojectionOn > 0.5f;
+    bool reprojectionOn = false;
+
+    vec2 currFrameJitter = reprojectionOn ? (POISSON_SAMPLES[(g_FrameNumber + dispatchThreadID.x + dispatchThreadID.y * 2) % SAMPLE_NUM] - 0.5f) : 0.0f;
+
+    vec3 screenCoords = ndcFromThreadID(max((vec3)dispatchThreadID + vec3(currFrameJitter, 0.0f), 0.0f));
+    float linearDepth = volumeZPosToDepth(screenCoords.z);
+    float layerThickness = volumeZPosToDepth(screenCoords.z + 1.0f / VOLUME_DEPTH) - linearDepth;
+
+    // TODO: ADD TEMPORAL REPROJECTION
+
+    vec3 worldSpacePos = worldPositionFromNdcCoords(screenCoords.xy, linearDepth);
+
+    float dustDensity = CalculateDensityFunction(worldSpacePos); //InputTexture[dispatchThreadID].x;
+    float scattering = g_VolumetricFogFinalScattering * (0.1f + dustDensity) * layerThickness;
+    float absorbtion = 0.0f * layerThickness;
+    float anisotropy = g_VolumetricFogPhaseAniso;
+    vec3 fogAlbedo = vec3(1.0f, 1.0f, 0.9f);
+    vec3 viewDir = normalize(worldSpacePos - g_WorldEyePos.xyz);
+
+    vec3 lighting = 0.0f;
+
+    lighting += GetSunLightingRadiance(worldSpacePos, viewDir, anisotropy);
+    lighting += GetAmbient(worldSpacePos, viewDir, anisotropy);
+    lighting += GetLocalLightsRadiance(worldSpacePos, viewDir, anisotropy);
+
+    lighting *= fogAlbedo;
+
+    vec4 finalOutValue = vec4(lighting * scattering, scattering + absorbtion);
+
+    vec4 fogWithReprojection = lerp(finalOutValue, fogPrevFrame, reprojectionValid);
+    OutLightingTexture[dispatchThreadID].rgba = fogWithReprojection;
 }

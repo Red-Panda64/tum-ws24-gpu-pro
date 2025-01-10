@@ -26,8 +26,8 @@ FogVolumeGenerationPass::FogVolumeGenerationPass(tga::Interface &tgai, std::arra
     cp = tgai.createComputePass({ volumeGenerationShader, tga::InputLayout{ { tga::BindingType::storageImage, tga::BindingType::sampler, tga::BindingType::uniformBuffer, tga::BindingType::uniformBuffer, tga::BindingType::sampler } } });
     tgai.free(volumeGenerationShader);
 
-    generationInputs[0] = tgai.createInputSet({ cp, { tga::Binding(lightingVolumes[0]), tga::Binding(lightingVolumes[1]), tga::Binding(generationInputsBuffer), tga::Binding(sp.inputBuffer()), tga::Binding(sp.shadowMap()) }, 0 });
-    generationInputs[1] = tgai.createInputSet({ cp, { tga::Binding(lightingVolumes[1]), tga::Binding(lightingVolumes[0]), tga::Binding(generationInputsBuffer), tga::Binding(sp.inputBuffer()), tga::Binding(sp.shadowMap()) }, 0 });
+    generationInputs[0] = tgai.createInputSet({ cp, { tga::Binding(lightingVolumes[0], 0), tga::Binding(lightingVolumes[1], 1), tga::Binding(generationInputsBuffer, 2), tga::Binding(sp.inputBuffer(), 3), tga::Binding(sp.shadowMap(), 4) }, 0 });
+    generationInputs[1] = tgai.createInputSet({ cp, { tga::Binding(lightingVolumes[1], 0), tga::Binding(lightingVolumes[0], 1), tga::Binding(generationInputsBuffer, 2), tga::Binding(sp.inputBuffer(), 3), tga::Binding(sp.shadowMap(), 4) }, 0 });
 }
 
 FogVolumeGenerationPass::~FogVolumeGenerationPass()
