@@ -222,11 +222,11 @@ int main(int argc, const char *argv[])
     auto rp = tgai.createRenderPass(rpInfo);
     Drawable windowDrawable{tgai, windowMesh};
     tga::InputSet windowInputSet = tgai.createInputSet({ rp, { tga::Binding(windowMesh.diffuseTexture, 0, 0), tga::Binding(windowMesh.specularTexture, 1, 0) }, 1 });
-    tga::InputSet windowTransformInputSet = tgai.createInputSet({rp, { tga::Binding(windowTransformBuffer) }, 2});
+    tga::InputSet windowTransformInputSet = tgai.createInputSet({rp, { tga::Binding(windowTransformBuffer, 0, 0) }, 2});
     tga::InputSet windowTransformShadowInputSet = tgai.createInputSet({sp.renderPass(), { tga::Binding(windowTransformBuffer, 0, 0) }, 1});
     Drawable planeDrawable{tgai, planeMesh};
     tga::InputSet planeInputSet = tgai.createInputSet({ rp, { tga::Binding(planeMesh.diffuseTexture, 0, 0), tga::Binding(planeMesh.specularTexture, 1, 0) }, 1 });
-    tga::InputSet planeTransformInputSet = tgai.createInputSet({rp, { tga::Binding(planeTransformBuffer) }, 2});
+    tga::InputSet planeTransformInputSet = tgai.createInputSet({rp, { tga::Binding(planeTransformBuffer, 0, 0) }, 2});
     tga::InputSet planeTransformShadowInputSet = tgai.createInputSet({sp.renderPass(), { tga::Binding(planeTransformBuffer, 0, 0) }, 1});
 
     tga::InputSet shadowMappingInputSet = sp.createInputSet(rp);
@@ -258,9 +258,9 @@ int main(int argc, const char *argv[])
             recorder.bindInputSet(planeTransformShadowInputSet);
             planeDrawable.draw(recorder);
 
-            // TODO: Gives validation error: dispatch cannot be called within a renderpass. Barrier did not work neither (which we actually need as we need the shadow map). Should we separate those command buffers and use waitforcompletion?
-            // recorder.barrier(tga::PipelineStage::ColorAttachmentOutput, tga::PipelineStage::ComputeShader);
             // Volume compute pass
+            recorder.setRenderPass(tga::RenderPass{nullptr}, i);
+            recorder.barrier(tga::PipelineStage::ColorAttachmentOutput, tga::PipelineStage::ComputeShader);
             fp.execute(recorder, i);
             recorder.barrier(tga::PipelineStage::ComputeShader, tga::PipelineStage::VertexInput);
 
