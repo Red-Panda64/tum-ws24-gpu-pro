@@ -1,6 +1,6 @@
 #define VOLUME_WIDTH  512.0
-#define VOLUME_HEIGHT 256.0  
-#define VOLUME_DEPTH  128.0 
+#define VOLUME_HEIGHT 256.0
+#define VOLUME_DEPTH  128.0
 
 #define FOG_RANGE 100.0 // TODO: Make it parameterizable? If we add ImGui 
 #define DEPTH_PACK_EXPONENT 2.0
