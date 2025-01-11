@@ -1,0 +1,37 @@
+#version 460
+
+layout(local_size_x=4, local_size_y=4, local_size_z=4) in;
+
+/* x,y,z: inscattering, a: extinction */
+layout(rgba32f, set = 0, binding = 0) uniform readonly image3D inVolume;
+/* x,y,z: inscattering, a: extinction
+ * both accumulated front to back
+ */
+layout(rgba32f, set = 0, binding = 1) uniform writeonly image3D accVolume;
+layout(set = 0, binding = 2) uniform VolumeGenerationInputs
+{
+    uvec3 resolution;
+};
+
+vec4 AccumulateScattering(in vec4 colorAndDensityFront, in vec4 colorAndDensityBack)
+{
+    // rgb = light in-scattered accumulated so far, a = accumulated scattering coefficient    
+    vec3 light = colorAndDensityFront.rgb + clamp(exp(-colorAndDensityFront.a), 0.0, 1.0) * colorAndDensityBack.rgb;
+    return vec4(light.rgb, colorAndDensityFront.a + colorAndDensityBack.a);
+}
+
+void main() {
+    if(any(greaterThanEqual(gl_GlobalInvocationID, resolution))) {
+        return;
+    }
+
+    vec4 currentSliceValue = imageLoad(inVolume, ivec3(gl_GlobalInvocationID.xy, 0)).rgba;
+    imageStore(accVolume, ivec3(gl_GlobalInvocationID.xy, 0), currentSliceValue);
+
+    for (int z = 1; z < int(resolution.z); z++)
+    {
+        vec4 nextValue = imageLoad(inVolume, ivec3(gl_GlobalInvocationID.xy, z)).rgba;
+        currentSliceValue = AccumulateScattering(currentSliceValue, nextValue);
+        imageStore(accVolume, ivec3(gl_GlobalInvocationID.xy, z), currentSliceValue);
+    }
+}
