@@ -1,4 +1,5 @@
 #pragma once
+#include <chrono>
 
 #include "tga/tga.hpp"
 #include "Scene.h"
@@ -11,20 +12,33 @@ public:
     FogVolumeGenerationPass(const FogVolumeGenerationPass &) = delete;
     FogVolumeGenerationPass &operator=(const FogVolumeGenerationPass &) = delete;
 
+    void update(const Scene &scene, uint32_t nf);
     void upload(tga::CommandRecorder &recorder) const;
     void execute(tga::CommandRecorder &recorder, uint32_t nf) const;
-    tga::ComputePass computePass() const;
     tga::InputSet createInputSet(tga::RenderPass rp) const;
+    tga::Texture scatteringVolume();
 private:
     struct VolumeGenerationInputs {
         alignas(16) std::array<uint32_t, 3> resolution;
+        alignas(16) glm::vec3 cameraPos;
+        alignas(16) glm::vec3 cameraXAxis;
+        alignas(16) glm::vec3 cameraYAxis;
+        alignas(16) glm::vec3 cameraZAxis;
+        alignas(16) DirLight dirLight;
+        alignas(4) float time;
+        alignas(4) int frameNumber;
     };
 
     tga::Interface *tgai;
+    std::chrono::system_clock::time_point startTime;
     tga::ComputePass cp;
+    tga::ComputePass accCp;
     std::array<uint32_t, 3> resolution;
     std::array<tga::Texture, 2> lightingVolumes;
     tga::Texture scatteringVolume;
+    tga::StagingBuffer generationInputsStaging;
+    VolumeGenerationInputs *generationInputsData;
     tga::Buffer generationInputsBuffer;
     std::array<tga::InputSet, 2> generationInputs;
+    std::array<tga::InputSet, 2> accumulationInputs;
 };

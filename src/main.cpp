@@ -248,6 +248,7 @@ int main(int argc, const char *argv[])
             recorder.bufferUpload(planeStagingBuffer, planeTransformBuffer, sizeof(glm::mat4));
 
             sp.upload(recorder);
+            fp.upload(recorder);
 
             recorder.barrier(tga::PipelineStage::Transfer, tga::PipelineStage::VertexShader);
 
@@ -262,7 +263,7 @@ int main(int argc, const char *argv[])
             recorder.setRenderPass(tga::RenderPass{nullptr}, i);
             recorder.barrier(tga::PipelineStage::ColorAttachmentOutput, tga::PipelineStage::ComputeShader);
             fp.execute(recorder, i);
-            recorder.barrier(tga::PipelineStage::ComputeShader, tga::PipelineStage::VertexInput);
+            recorder.barrier(tga::PipelineStage::ComputeShader, tga::PipelineStage::FragmentShader);
 
             // Forward pass
             recorder.setRenderPass(rp, i, {0.0, 0.0, 0.0, 1.0});
@@ -320,6 +321,7 @@ int main(int argc, const char *argv[])
         processInputs(win, scene, dt);
         sp.update(scene, 0.001f, 0.04f);
         auto nf = tgai.nextFrame(win);
+        fp.update(scene, nf);
         auto& cmd = cmdBuffers[nf];
         tgai.execute(cmd);
         tgai.present(win, nf);
