@@ -51,8 +51,9 @@ public:
     void updateCameraLastMousePos(double x, double y);
     const glm::mat4 &viewProjection() const;
     const DirLight &dirLight() const;
+    const Camera &camera() const;
 private:
-    Camera camera;
+    Camera m_camera;
     tga::StagingBuffer sceneStagingBuffer;
     SceneUniformBuffer* pSceneStagingBuffer;
     tga::Buffer sceneBuffer;

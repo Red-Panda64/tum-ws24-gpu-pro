@@ -7,7 +7,7 @@ Scene::Scene(tga::Interface& tgai)
 
 void Scene::initCamera(const glm::vec3& pos, const glm::quat& orientation)
 {
-	camera = Camera(pos, orientation);
+	m_camera = Camera(pos, orientation);
 }
 
 void Scene::setDirLight(const glm::vec3& direction, const glm::vec3& color)
@@ -45,8 +45,8 @@ void Scene::prepareSceneUniformBuffer(tga::Interface& tgai)
 
 void Scene::updateSceneBufferCameraData(float aspectRatio)
 {
-	pSceneStagingBuffer->projectionView = camera.projection(aspectRatio) * camera.view();
-	pSceneStagingBuffer->cameraPos = camera.getPosition();
+	pSceneStagingBuffer->projectionView = m_camera.projection(aspectRatio) * m_camera.view();
+	pSceneStagingBuffer->cameraPos = m_camera.getPosition();
 }
 
 void Scene::createSceneInputSet(tga::Interface& tgai, tga::RenderPass& rp)
@@ -66,32 +66,32 @@ void Scene::bindSceneInputSet(tga::CommandRecorder& recorder)
 
 void Scene::moveCamera(const glm::vec3& direction, float deltaTime, float speed)
 {
-	camera.move(direction, deltaTime, speed);
+	m_camera.move(direction, deltaTime, speed);
 }
 
 void Scene::moveCameraXDir(float direction, float deltaTime, float speed)
 {
-	camera.moveXDir(direction, deltaTime, speed);
+	m_camera.moveXDir(direction, deltaTime, speed);
 }
 
 void Scene::moveCameraYDir(float direction, float deltaTime, float speed)
 {
-	camera.moveYDir(direction, deltaTime, speed);
+	m_camera.moveYDir(direction, deltaTime, speed);
 }
 
 void Scene::moveCameraZDir(float direction, float deltaTime, float speed)
 {
-	camera.moveZDir(direction, deltaTime, speed);
+	m_camera.moveZDir(direction, deltaTime, speed);
 }
 
 void Scene::rotateCameraWithMouseInput(double xPos, double yPos)
 {
-	camera.rotateWithMouseInput(xPos, yPos);
+	m_camera.rotateWithMouseInput(xPos, yPos);
 }
 
 void Scene::updateCameraLastMousePos(double x, double y)
 {
-	camera.updateLastMousePos(x, y);
+	m_camera.updateLastMousePos(x, y);
 }
 
 const glm::mat4 &Scene::viewProjection() const
@@ -102,4 +102,9 @@ const glm::mat4 &Scene::viewProjection() const
 const DirLight &Scene::dirLight() const
 {
     return pSceneStagingBuffer->dirLight;
+}
+
+const Camera &Scene::camera() const
+{
+    return m_camera;
 }
