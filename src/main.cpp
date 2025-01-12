@@ -180,11 +180,10 @@ int main(int argc, const char *argv[])
     
     // Prepare the Input (whole collection of sets) Layout (Descriptor Set(s))
     // Set 0: Global Scene Data, Set 1: mesh data, Set 2: object data
-    tga::SetLayout meshDescriptorSet0Layout = tga::SetLayout{ {tga::BindingType::uniformBuffer} };
+    tga::SetLayout meshDescriptorSet0Layout = tga::SetLayout{ {tga::BindingType::uniformBuffer, tga::BindingType::uniformBuffer, tga::BindingType::sampler, tga::BindingType::sampler, tga::BindingType::uniformBuffer} };
     tga::SetLayout meshDescriptorSet1Layout = tga::SetLayout{ {tga::BindingType::sampler, tga::BindingType::sampler} };
     tga::SetLayout meshDescriptorSet2Layout = tga::SetLayout{ {tga::BindingType::uniformBuffer} };
-    tga::SetLayout meshDescriptorSet3Layout = tga::SetLayout{ {tga::BindingType::uniformBuffer, tga::BindingType::sampler} };
-    tga::InputLayout meshDescriptorLayout = tga::InputLayout( { meshDescriptorSet0Layout, meshDescriptorSet1Layout, meshDescriptorSet2Layout, meshDescriptorSet3Layout } );
+    tga::InputLayout meshDescriptorLayout = tga::InputLayout( { meshDescriptorSet0Layout, meshDescriptorSet1Layout, meshDescriptorSet2Layout } );
 
     // Load shader code from file
     auto vs = tga::loadShader("../shaders/mesh_vert.spv", tga::ShaderType::vertex, tgai);
@@ -217,7 +216,7 @@ int main(int argc, const char *argv[])
         .setClearOperations(tga::ClearOperation::all)
         .setPerPixelOperations(tga::PerPixelOperations{}.setDepthCompareOp(tga::CompareOperation::lessEqual))
         .setRasterizerConfig(tga::RasterizerConfig().setFrontFace(tga::FrontFace::counterclockwise).setCullMode(tga::CullMode::back))
-        .setInputLayout({ meshDescriptorLayout })
+        .setInputLayout(meshDescriptorLayout)
         .setVertexLayout(vertexLayout);
     auto rp = tgai.createRenderPass(rpInfo);
     Drawable windowDrawable{tgai, windowMesh};
@@ -229,10 +228,8 @@ int main(int argc, const char *argv[])
     tga::InputSet planeTransformInputSet = tgai.createInputSet({rp, { tga::Binding(planeTransformBuffer, 0, 0) }, 2});
     tga::InputSet planeTransformShadowInputSet = tgai.createInputSet({sp.renderPass(), { tga::Binding(planeTransformBuffer, 0, 0) }, 1});
 
-    tga::InputSet shadowMappingInputSet = sp.createInputSet(rp);
-
-    // Create scene (global) input (descriptor) set
-    scene.createSceneInputSet(tgai, rp);
+    // Create global input (descriptor) set
+    tga::InputSet globalInput = tgai.createInputSet({ rp, { tga::Binding(scene.buffer(), 0), tga::Binding(sp.inputBuffer(), 1), tga::Binding(sp.shadowMap(), 2), tga::Binding(fp.scatteringVolume(), 3), tga::Binding(fp.inputBuffer(), 4) } , 0 });
 
     std::vector<tga::CommandBuffer> cmdBuffers(tgai.backbufferCount(win));
     auto rebuildCmdBuffers = [&]() {
@@ -267,8 +264,7 @@ int main(int argc, const char *argv[])
 
             // Forward pass
             recorder.setRenderPass(rp, i, {0.0, 0.0, 0.0, 1.0});
-            recorder.bindInputSet(shadowMappingInputSet);
-            scene.bindSceneInputSet(recorder);
+            recorder.bindInputSet(globalInput);
             recorder.bindInputSet(windowInputSet);
             recorder.bindInputSet(windowTransformInputSet);
             windowDrawable.draw(recorder);

@@ -40,15 +40,14 @@ public:
     void setAmbientFactor(float ambientFactor);
     void prepareSceneUniformBuffer(tga::Interface& tgai);
     void updateSceneBufferCameraData(float aspectRatio);
-    void createSceneInputSet(tga::Interface& tgai, tga::RenderPass& rp);
     void bufferUpload(tga::CommandRecorder& recorder);
-    void bindSceneInputSet(tga::CommandRecorder& recorder);
     void moveCamera(const glm::vec3& direction, float deltaTime, float speed);
     void moveCameraXDir(float direction, float deltaTime, float speed);
     void moveCameraYDir(float direction, float deltaTime, float speed);
     void moveCameraZDir(float direction, float deltaTime, float speed);
     void rotateCameraWithMouseInput(double xPos, double yPos);
     void updateCameraLastMousePos(double x, double y);
+    tga::Buffer buffer() const;
     const glm::mat4 &viewProjection() const;
     const DirLight &dirLight() const;
     const Camera &camera() const;
@@ -60,7 +59,4 @@ private:
     // Information regarding the Uniform Buffer needed for data uploading (useful for partial updates) TODO: NOT USED YET
     // const size_t cameraDataSize = sizeof(pSceneStagingBuffer->view) + sizeof(pSceneStagingBuffer->projection);
     // const size_t cameraDataOffset = offsetof(SceneUniformBuffer, view);
-
-    // Scene (global) input (descriptor) set
-    tga::InputSet sceneInputSet;
 };

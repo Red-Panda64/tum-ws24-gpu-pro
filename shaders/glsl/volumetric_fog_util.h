@@ -52,7 +52,7 @@ float depthToVolumeZPos(float depth)
     return pow(abs(depth / FOG_RANGE), 1.0f / DEPTH_PACK_EXPONENT);
 }
 
-vec3 volumeTextureSpaceFromNdc(vec3 volumeSS)
+vec3 volumeTextureSpaceFromScreenSpace(vec3 volumeSS)
 {
     return clamp(volumeSS, 0.0, 1.0) * vec3((VOLUME_WIDTH - 1) / VOLUME_WIDTH, (VOLUME_HEIGHT - 1) / VOLUME_HEIGHT, (VOLUME_DEPTH - 1) / VOLUME_DEPTH) + vec3(0.5f / VOLUME_WIDTH, 0.5f / VOLUME_HEIGHT, 0.5f / VOLUME_DEPTH);
 }

@@ -137,8 +137,3 @@ void ShadowPass::update(const ::Scene &scene, float shadowNearDistance, float sh
     }
     this->scene->viewProjection = perspective * view;
 }
-
-tga::InputSet ShadowPass::createInputSet(tga::RenderPass rp) const
-{
-    return tgai->createInputSet({rp, { tga::Binding(sceneData, 0, 0), tga::Binding(hShadowMap, 1, 0) }, 3});
-}
