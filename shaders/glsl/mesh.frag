@@ -1,13 +1,6 @@
 #version 460
 #include "shadow_map.h"
 
-layout(set = 3, binding = 0) uniform DirShadower
-{
-    mat4 lightPV;
-} shadower;
-
-layout(set = 3, binding = 1) uniform sampler2D shadowMap;
-
 struct DirLight
 {
     vec3 direction;
@@ -31,6 +24,29 @@ layout(set = 0, binding = 0) uniform Scene
     int nrPointLights;
     float ambientFactor;
 } scene;
+
+layout(set = 0, binding = 1) uniform DirShadower
+{
+    mat4 lightPV;
+} shadower;
+
+layout(set = 0, binding = 2) uniform sampler2D shadowMap;
+
+layout(set = 0, binding = 3) uniform sampler3D scatteringVolume;
+
+layout(set = 0, binding = 4) uniform VolumeGenerationInputs
+{
+    uvec3 resolution;
+    vec3 cameraPos;
+    vec3 cameraXAxis;
+    vec3 cameraYAxis;
+    vec3 cameraZAxis;
+    DirLight dirLight;
+    float time;
+    int frameNumber;
+};
+
+#include "volumetric_fog_util.h"
 
 layout(set = 1, binding = 0) uniform sampler2D diffuseTexture;
 layout(set = 1, binding = 1) uniform sampler2D specularTexture;
@@ -104,6 +120,11 @@ void main()
 	{
 		result += calculatePointLight(scene.pointLights[i], n, vIn.fragWorldPos, fragToCamera, diffuseTextureValue, specularTextureValue);
 	}
+
+	//float linearDepth = dot(scene.camPos - vIn.fragWorldPos, cameraZAxis);
+	//vec3 uvw = volumeTextureSpaceFromScreenSpace(vec3(gl_FragCoord.xy, clamp(depthToVolumeZPos(linearDepth), 0.0, 1.0)));
+	//vec4 inScatteringExtinction = texture(scatteringVolume, uvw);
+	//result = vec3(result * inScatteringExtinction.a + inScatteringExtinction.rgb);
 
 	color = vec4(result, 1.0f);
 }

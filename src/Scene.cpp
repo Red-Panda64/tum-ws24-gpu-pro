@@ -49,19 +49,9 @@ void Scene::updateSceneBufferCameraData(float aspectRatio)
 	pSceneStagingBuffer->cameraPos = m_camera.getPosition();
 }
 
-void Scene::createSceneInputSet(tga::Interface& tgai, tga::RenderPass& rp)
-{
-	sceneInputSet = tgai.createInputSet({ rp, {tga::Binding(sceneBuffer, 0)} , 0 });
-}
-
 void Scene::bufferUpload(tga::CommandRecorder& recorder)
 {
 	recorder.bufferUpload(sceneStagingBuffer, sceneBuffer, sizeof(SceneUniformBuffer));
-}
-
-void Scene::bindSceneInputSet(tga::CommandRecorder& recorder)
-{
-	recorder.bindInputSet(sceneInputSet);
 }
 
 void Scene::moveCamera(const glm::vec3& direction, float deltaTime, float speed)
@@ -92,6 +82,11 @@ void Scene::rotateCameraWithMouseInput(double xPos, double yPos)
 void Scene::updateCameraLastMousePos(double x, double y)
 {
 	m_camera.updateLastMousePos(x, y);
+}
+
+tga::Buffer Scene::buffer() const
+{
+    return sceneBuffer;
 }
 
 const glm::mat4 &Scene::viewProjection() const

@@ -83,13 +83,12 @@ void FogVolumeGenerationPass::execute(tga::CommandRecorder &recorder, uint32_t n
     recorder.dispatch(ceilDiv(resolution[0], 4u) , ceilDiv(resolution[1], 4u), 1);
 }
 
-tga::InputSet FogVolumeGenerationPass::createInputSet(tga::RenderPass rp) const
+tga::Buffer FogVolumeGenerationPass::inputBuffer() const
 {
-    /* TODO: determine set numbers in a better way */
-    return tgai->createInputSet({rp, { tga::Binding(m_scatteringVolume, 0, 0) }, 4});
+    return generationInputsBuffer;
 }
 
-tga::Texture FogVolumeGenerationPass::scatteringVolume()
+tga::Texture FogVolumeGenerationPass::scatteringVolume() const
 {
     return m_scatteringVolume;
 }

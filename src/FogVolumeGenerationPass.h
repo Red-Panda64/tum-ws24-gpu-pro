@@ -15,8 +15,8 @@ public:
     void update(const Scene &scene, uint32_t nf);
     void upload(tga::CommandRecorder &recorder) const;
     void execute(tga::CommandRecorder &recorder, uint32_t nf) const;
-    tga::InputSet createInputSet(tga::RenderPass rp) const;
-    tga::Texture scatteringVolume();
+    tga::Buffer inputBuffer() const;
+    tga::Texture scatteringVolume() const;
 private:
     struct VolumeGenerationInputs {
         alignas(16) std::array<uint32_t, 3> resolution;
@@ -35,7 +35,7 @@ private:
     tga::ComputePass accCp;
     std::array<uint32_t, 3> resolution;
     std::array<tga::Texture, 2> lightingVolumes;
-    tga::Texture scatteringVolume;
+    tga::Texture m_scatteringVolume;
     tga::StagingBuffer generationInputsStaging;
     VolumeGenerationInputs *generationInputsData;
     tga::Buffer generationInputsBuffer;
