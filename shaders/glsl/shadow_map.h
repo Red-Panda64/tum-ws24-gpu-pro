@@ -6,6 +6,9 @@ float getShadowValue(mat4 lightPV, sampler2D shadowMap, vec4 worldPosition, floa
     // TODO: slope dependent bias
     vec4 lightspacePositionH = lightPV * worldPosition;
     vec3 lightspacePosition = lightspacePositionH.xyz / lightspacePositionH.w;
+    if(lightspacePosition.z >= 1.0f) {
+        return 1.0f;
+    }
     vec2 shadowUVs = lightspacePosition.xy * 0.5f + vec2(0.5f);
     float smSample = 0.0f;
     vec2 offsetRange = vec2(1.0f, 1.0f) / textureSize(shadowMap, 0);
