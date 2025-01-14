@@ -92,3 +92,9 @@ vec4 getRotatedPhaseFunctionSH(vec3 dir, float g)
     // for given view vector direction.
     return vec4(1.0f, dir.y, dir.z, dir.x) * vec4(1.0f, g, g, g);
 }
+
+vec3 applyFog(sampler3D scatteringVolume, vec3 color, vec3 screenSpace) {
+	vec3 uvw = volumeTextureSpaceFromScreenSpace(screenSpace);
+	vec4 inScatteringExtinction = texture(scatteringVolume, uvw);
+	return vec3(color * inScatteringExtinction.a + inScatteringExtinction.rgb);
+}

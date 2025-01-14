@@ -38,5 +38,6 @@ void main()
     mixAlpha = 1.0f - pow(1.0f - mixAlpha, 100.0f);
 	vec3 upColor = vec3(0.2f, 0.35f, 0.75f);
 	vec3 downColor = vec3(0.65f, 0.65f, 0.65f);
-	color = vec4(mix(downColor, upColor, vec3(mixAlpha, mixAlpha, mixAlpha)), 1.0);
+	color = vec4(mix(downColor, upColor, vec3(mixAlpha, mixAlpha, mixAlpha)), 1.0f);
+    color = vec4(applyFog(scatteringVolume, color.rgb, vec3(gl_FragCoord.xy, 1.0f)), 1.0f);
 }
