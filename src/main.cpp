@@ -228,6 +228,18 @@ int main(int argc, const char *argv[])
     tga::InputSet planeTransformInputSet = tgai.createInputSet({rp, { tga::Binding(planeTransformBuffer, 0, 0) }, 2});
     tga::InputSet planeTransformShadowInputSet = tgai.createInputSet({sp.renderPass(), { tga::Binding(planeTransformBuffer, 0, 0) }, 1});
 
+    // Load shader code from file
+    auto skyVs = tga::loadShader("../shaders/sky_vert.spv", tga::ShaderType::vertex, tgai);
+    auto skyFs = tga::loadShader("../shaders/sky_frag.spv", tga::ShaderType::fragment, tgai);
+    auto skyRpInfo = tga::RenderPassInfo{skyVs, skyFs, win}
+        .setClearOperations(tga::ClearOperation::none)
+        .setPerPixelOperations(tga::PerPixelOperations{}.setDepthCompareOp(tga::CompareOperation::lessEqual))
+        .setRasterizerConfig(tga::RasterizerConfig().setFrontFace(tga::FrontFace::counterclockwise).setCullMode(tga::CullMode::back))
+        .setInputLayout(tga::InputLayout( { tga::SetLayout { tga::BindingType::uniformBuffer, tga::BindingType::sampler, tga::BindingType::uniformBuffer } } ))
+        .setVertexLayout(tga::VertexLayout { 0, {} });
+    auto skyRp = tgai.createRenderPass(skyRpInfo);
+    tga::InputSet skyInput = tgai.createInputSet({ skyRp, { tga::Binding(scene.buffer(), 0), tga::Binding(fp.scatteringVolume(), 1), tga::Binding(fp.inputBuffer(), 2) } , 0 });
+
     // Create global input (descriptor) set
     tga::InputSet globalInput = tgai.createInputSet({ rp, { tga::Binding(scene.buffer(), 0), tga::Binding(sp.inputBuffer(), 1), tga::Binding(sp.shadowMap(), 2), tga::Binding(fp.scatteringVolume(), 3), tga::Binding(fp.inputBuffer(), 4) } , 0 });
 
@@ -271,6 +283,10 @@ int main(int argc, const char *argv[])
             recorder.bindInputSet(planeInputSet);
             recorder.bindInputSet(planeTransformInputSet);
             planeDrawable.draw(recorder);
+
+            recorder.setRenderPass(skyRp, i);
+            recorder.bindInputSet(skyInput);
+            recorder.draw(6, 0);
 
             cmdBuffers[i] = recorder.endRecording();
         }
