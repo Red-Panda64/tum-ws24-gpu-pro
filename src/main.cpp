@@ -43,7 +43,7 @@ double getDeltaTime()
 
 void processInputs(const tga::Window& win, Scene& scene, double dt)
 {
-    float speed = 0.3;
+    float speed = 0.05;
     if(tgai.keyDown(win, tga::Key::Shift_Left))
     {
         speed *= 2;
@@ -151,18 +151,17 @@ int main(int argc, const char *argv[])
     // Scene
     Scene scene(tgai);
     // Setup the camera
-    scene.initCamera(glm::vec3(0.0f, 0.0f, 500.0f), glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)));
-    scene.setAmbientFactor(0.05f);
+    scene.initCamera(glm::vec3(0.0f, 0.0f, 100.0f), glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)));
+    scene.setAmbientFactor(0.03f);
     // Directional light
-    scene.setDirLight(glm::vec3(1.0f, -1.0f, 1.0f), glm::vec3(1.0f, 1.0, 1.0f));
+    scene.setDirLight(glm::vec3(10.0f, -10.0f, -1.0f), glm::vec3(150.0f));
     static std::mt19937 rng(std::random_device{}());
     for(int i = 0; i < MAX_NR_OF_POINT_LIGHTS; ++i)
     {
-        std::uniform_real_distribution<float> posDist(-1250, 1250);
-        std::uniform_real_distribution<float> colorDist(0, 100);
-        scene.addPointLight(glm::vec3(posDist(rng), posDist(rng), posDist(rng)), glm::vec3(colorDist(rng), colorDist(rng), colorDist(rng)), glm::vec3(1.0f, 0.007f, 0.0002f));
+        std::uniform_real_distribution<float> posDist(-100, 100);
+        // std::uniform_real_distribution<float> colorDist(0, 100);
+        scene.addPointLight(glm::vec3(posDist(rng), posDist(rng), posDist(rng)), glm::vec3(150.0f), glm::vec3(1.0f, 0.007f, 0.0002f));
     }
-
 
     // Update Camera Data at the beginning
     scene.updateSceneBufferCameraData(aspectRatio);
@@ -181,7 +180,7 @@ int main(int argc, const char *argv[])
     // Prepare the Input (whole collection of sets) Layout (Descriptor Set(s))
     // Set 0: Global Scene Data, Set 1: mesh data, Set 2: object data
     tga::SetLayout meshDescriptorSet0Layout = tga::SetLayout{ {tga::BindingType::uniformBuffer, tga::BindingType::uniformBuffer, tga::BindingType::sampler, tga::BindingType::sampler, tga::BindingType::uniformBuffer} };
-    tga::SetLayout meshDescriptorSet1Layout = tga::SetLayout{ {tga::BindingType::sampler, tga::BindingType::sampler} };
+    tga::SetLayout meshDescriptorSet1Layout = tga::SetLayout{ {tga::BindingType::sampler, tga::BindingType::sampler, tga::BindingType::sampler, tga::BindingType::sampler, tga::BindingType::sampler} };
     tga::SetLayout meshDescriptorSet2Layout = tga::SetLayout{ {tga::BindingType::uniformBuffer} };
     tga::InputLayout meshDescriptorLayout = tga::InputLayout( { meshDescriptorSet0Layout, meshDescriptorSet1Layout, meshDescriptorSet2Layout } );
 
@@ -194,18 +193,24 @@ int main(int argc, const char *argv[])
     //tga::InputLayout computeInputLayout = tga::InputLayout({ computeSetLayout });
     //auto cp = tgai.createComputePass({cs, computeInputLayout});
 
-    Mesh windowMesh{tgai, "../assets/window.obj", vertexLayout};
-    glm::mat4 windowTransform = glm::mat4(1.0);
-    windowTransform = glm::scale(windowTransform, glm::vec3(5.0, 5.0, 5.0));
-    // TODO: use single buffer
-    tga::StagingBuffer windowStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(windowTransform))});
-    tga::Buffer windowTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), windowStagingBuffer, 0 });
-    Mesh planeMesh{tgai, "../assets/plane.obj", vertexLayout};
-    glm::mat4 planeTransform = glm::mat4(1.0);
-    planeTransform = glm::scale(planeTransform, glm::vec3(100.0, 100.0, 100.0));
-    tga::StagingBuffer planeStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(planeTransform))});
-    tga::Buffer planeTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), planeStagingBuffer, 0 });
+    //Mesh windowMesh{tgai, "../assets/window.obj", vertexLayout};
+    //glm::mat4 windowTransform = glm::mat4(1.0);
+    //windowTransform = glm::scale(windowTransform, glm::vec3(5.0, 5.0, 5.0));
+    //// TODO: use single buffer
+    //tga::StagingBuffer windowStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(windowTransform))});
+    //tga::Buffer windowTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), windowStagingBuffer, 0 });
+    //Mesh planeMesh{tgai, "../assets/plane.obj", vertexLayout};
+    //glm::mat4 planeTransform = glm::mat4(1.0);
+    //planeTransform = glm::scale(planeTransform, glm::vec3(100.0, 100.0, 100.0));
+    //tga::StagingBuffer planeStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(planeTransform))});
+    //tga::Buffer planeTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), planeStagingBuffer, 0 });
     
+    Mesh pbrMesh{tgai, "../assets/brass/brass.obj", vertexLayout};
+    glm::mat4 pbrMeshTransform = glm::mat4(1.0);
+    pbrMeshTransform = glm::scale(pbrMeshTransform, glm::vec3(20.0, 20.0, 20.0));
+    tga::StagingBuffer pbrMeshStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(pbrMeshTransform))});
+    tga::Buffer pbrMeshTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), pbrMeshStagingBuffer, 0 });
+
     constexpr uint32_t SHADOW_MAP_RESX = 4096;
     constexpr uint32_t SHADOW_MAP_RESY = 4096;
     ShadowPass sp{ tgai, { SHADOW_MAP_RESX, SHADOW_MAP_RESY }, vertexLayout };
@@ -219,14 +224,19 @@ int main(int argc, const char *argv[])
         .setInputLayout(meshDescriptorLayout)
         .setVertexLayout(vertexLayout);
     auto rp = tgai.createRenderPass(rpInfo);
-    Drawable windowDrawable{tgai, windowMesh};
-    tga::InputSet windowInputSet = tgai.createInputSet({ rp, { tga::Binding(windowMesh.diffuseTexture, 0, 0), tga::Binding(windowMesh.specularTexture, 1, 0) }, 1 });
-    tga::InputSet windowTransformInputSet = tgai.createInputSet({rp, { tga::Binding(windowTransformBuffer, 0, 0) }, 2});
-    tga::InputSet windowTransformShadowInputSet = tgai.createInputSet({sp.renderPass(), { tga::Binding(windowTransformBuffer, 0, 0) }, 1});
-    Drawable planeDrawable{tgai, planeMesh};
-    tga::InputSet planeInputSet = tgai.createInputSet({ rp, { tga::Binding(planeMesh.diffuseTexture, 0, 0), tga::Binding(planeMesh.specularTexture, 1, 0) }, 1 });
-    tga::InputSet planeTransformInputSet = tgai.createInputSet({rp, { tga::Binding(planeTransformBuffer, 0, 0) }, 2});
-    tga::InputSet planeTransformShadowInputSet = tgai.createInputSet({sp.renderPass(), { tga::Binding(planeTransformBuffer, 0, 0) }, 1});
+    //Drawable windowDrawable{tgai, windowMesh};
+    //tga::InputSet windowInputSet = tgai.createInputSet({ rp, { tga::Binding(windowMesh.diffuseTexture, 0, 0), tga::Binding(windowMesh.specularTexture, 1, 0) }, 1 });
+    //tga::InputSet windowTransformInputSet = tgai.createInputSet({rp, { tga::Binding(windowTransformBuffer, 0, 0) }, 2});
+    //tga::InputSet windowTransformShadowInputSet = tgai.createInputSet({sp.renderPass(), { tga::Binding(windowTransformBuffer, 0, 0) }, 1});
+    //Drawable planeDrawable{tgai, planeMesh};
+    //tga::InputSet planeInputSet = tgai.createInputSet({ rp, { tga::Binding(planeMesh.diffuseTexture, 0, 0), tga::Binding(planeMesh.specularTexture, 1, 0) }, 1 });
+    //tga::InputSet planeTransformInputSet = tgai.createInputSet({rp, { tga::Binding(planeTransformBuffer, 0, 0) }, 2});
+    //tga::InputSet planeTransformShadowInputSet = tgai.createInputSet({sp.renderPass(), { tga::Binding(planeTransformBuffer, 0, 0) }, 1});
+
+    Drawable pbrDrawable{tgai, pbrMesh};
+    tga::InputSet pbrTextureInputSet = pbrMesh.getTextureInputSet(tgai, rp);
+    tga::InputSet pbrMeshTransformInputSet = tgai.createInputSet({rp, { tga::Binding(pbrMeshTransformBuffer, 0, 0) }, 2});
+    tga::InputSet pbrMeshTransformShadowInputSet = tgai.createInputSet({sp.renderPass(), { tga::Binding(pbrMeshTransformBuffer, 0, 0) }, 1});
 
     // Load shader code from file
     auto skyVs = tga::loadShader("../shaders/sky_vert.spv", tga::ShaderType::vertex, tgai);
@@ -253,8 +263,9 @@ int main(int argc, const char *argv[])
             tga::CommandRecorder recorder = tga::CommandRecorder{ tgai, cmdBuffers[i] };
             // Scene Buffer is global and every mesh using the pipeline (we only have 1) uses the same buffer so loading it once per frame.
             scene.bufferUpload(recorder);
-            recorder.bufferUpload(windowStagingBuffer, windowTransformBuffer, sizeof(glm::mat4));
-            recorder.bufferUpload(planeStagingBuffer, planeTransformBuffer, sizeof(glm::mat4));
+            // recorder.bufferUpload(windowStagingBuffer, windowTransformBuffer, sizeof(glm::mat4));
+            // recorder.bufferUpload(planeStagingBuffer, planeTransformBuffer, sizeof(glm::mat4));
+            recorder.bufferUpload(pbrMeshStagingBuffer, pbrMeshTransformBuffer, sizeof(glm::mat4));
 
             sp.upload(recorder);
             fp.upload(recorder);
@@ -263,10 +274,12 @@ int main(int argc, const char *argv[])
 
             // Shadow pass
             sp.bind(recorder, i);
-            recorder.bindInputSet(windowTransformShadowInputSet);
-            windowDrawable.draw(recorder);
-            recorder.bindInputSet(planeTransformShadowInputSet);
-            planeDrawable.draw(recorder);
+            //recorder.bindInputSet(windowTransformShadowInputSet);
+            //windowDrawable.draw(recorder);
+            //recorder.bindInputSet(planeTransformShadowInputSet);
+            //planeDrawable.draw(recorder);
+            recorder.bindInputSet(pbrMeshTransformShadowInputSet);
+            pbrDrawable.draw(recorder);
 
             // Volume compute pass
             recorder.setRenderPass(tga::RenderPass{nullptr}, i);
@@ -277,16 +290,19 @@ int main(int argc, const char *argv[])
             // Forward pass
             recorder.setRenderPass(rp, i, {0.0, 0.0, 0.0, 1.0});
             recorder.bindInputSet(globalInput);
-            recorder.bindInputSet(windowInputSet);
-            recorder.bindInputSet(windowTransformInputSet);
-            windowDrawable.draw(recorder);
-            recorder.bindInputSet(planeInputSet);
-            recorder.bindInputSet(planeTransformInputSet);
-            planeDrawable.draw(recorder);
+            //recorder.bindInputSet(windowInputSet);
+            //recorder.bindInputSet(windowTransformInputSet);
+            //windowDrawable.draw(recorder);
+            //recorder.bindInputSet(planeInputSet);
+            //recorder.bindInputSet(planeTransformInputSet);
+            //planeDrawable.draw(recorder);
+            recorder.bindInputSet(pbrTextureInputSet);
+            recorder.bindInputSet(pbrMeshTransformInputSet);
+            pbrDrawable.draw(recorder);
 
-            recorder.setRenderPass(skyRp, i);
-            recorder.bindInputSet(skyInput);
-            recorder.draw(6, 0);
+            //recorder.setRenderPass(skyRp, i);
+            //recorder.bindInputSet(skyInput);
+            //recorder.draw(6, 0);
 
             cmdBuffers[i] = recorder.endRecording();
         }
