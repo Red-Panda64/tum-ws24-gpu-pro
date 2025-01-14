@@ -27,8 +27,9 @@ struct SceneUniformBuffer
     alignas(16) glm::vec3 cameraPos;
     alignas(16) DirLight dirLight;
     alignas(16) PointLight pointLights[MAX_NR_OF_POINT_LIGHTS];
-    alignas(16) int nrPointLights;
-    alignas(16) float ambientFactor;
+    alignas(4)  int nrPointLights;
+    alignas(4)  float ambientFactor;
+    alignas(8)  glm::vec2 viewport;
 };
 
 class Scene
@@ -40,7 +41,7 @@ public:
     void addPointLight(const glm::vec3& position, const glm::vec3& color, const glm::vec3& attenuationFactors);
     void setAmbientFactor(float ambientFactor);
     void prepareSceneUniformBuffer(tga::Interface& tgai);
-    void updateSceneBufferCameraData(float aspectRatio);
+    void updateSceneBufferCameraData(glm::uvec2 viewport);
     void bufferUpload(tga::CommandRecorder& recorder);
     void moveCamera(const glm::vec3& direction, float deltaTime, float speed);
     void moveCameraXDir(float direction, float deltaTime, float speed);

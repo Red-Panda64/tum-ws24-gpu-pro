@@ -15,8 +15,10 @@ public:
     const glm::vec3 right() const;
     const glm::vec3 up() const;
     const glm::vec3 front() const; //gaze
+    const glm::uvec2 getViewport();
 
     void setFov(float fov_in);
+    void setViewport(glm::uvec2 dims);
 
     //Transformations
     //Translation
@@ -41,12 +43,14 @@ public:
     glm::mat4 translation() const;
     glm::mat4 rotation() const;
     glm::mat4 view() const;
-    glm::mat4 projection(float aspectRatio) const;
+    glm::mat4 projection() const;
 
 private:
     glm::vec3 position;
     glm::quat orientation;
     float fov = 45.0f;
+    // Viewport dimensions
+    glm::uvec2 viewport;
     //These are the last positions camera looks at (pixelwise)
     double lastX;
     double lastY;

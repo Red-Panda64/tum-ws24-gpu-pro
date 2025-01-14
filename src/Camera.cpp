@@ -37,9 +37,19 @@ const glm::vec3 Camera::front() const
     return -glm::vec3(glm::row(rotation(), 2));
 }
 
+const glm::uvec2 Camera::getViewport()
+{
+    return viewport;
+}
+
 void Camera::setFov(float fov_in)
 {
     fov = fov_in;
+}
+
+void Camera::setViewport(glm::uvec2 dims)
+{
+    viewport = dims;
 }
 
 void Camera::move(const glm::vec3& direction, float deltaTime, float speed)
@@ -138,8 +148,9 @@ glm::mat4 Camera::view() const
     return rotation() * translation();
 }
 
-glm::mat4 Camera::projection(float aspectRatio) const
+glm::mat4 Camera::projection() const
 {
+    float aspectRatio = static_cast<float>(viewport.x) / viewport.y;
     glm::mat4 projectionMat = glm::perspective(glm::radians(fov), aspectRatio, 0.1f, 10000.f);
     // Vulkan's coordinate system has an inverted y wrt OpenGL
     projectionMat[1][1] *= -1;
