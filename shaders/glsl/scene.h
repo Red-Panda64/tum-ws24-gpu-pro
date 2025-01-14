@@ -21,4 +21,5 @@ struct Scene
     PointLight pointLights[MAX_NR_OF_POINT_LIGHTS];
     int nrPointLights;
     float ambientFactor;
+    vec2 viewport;
 };

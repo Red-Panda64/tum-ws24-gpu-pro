@@ -104,7 +104,6 @@ void main()
 	}
 
     float linearDepth = dot(scene.camPos - vIn.fragWorldPos, cameraZAxis);
-	result = applyFog(scatteringVolume, result, vec3(gl_FragCoord.xy, clamp(depthToVolumeZPos(linearDepth), 0.0, 1.0)));
-
+	result = applyFog(scatteringVolume, result, vec3(gl_FragCoord.xy / scene.viewport, clamp(depthToVolumeZPos(linearDepth), 0.0, 1.0)));
 	color = vec4(result, 1.0f);
 }

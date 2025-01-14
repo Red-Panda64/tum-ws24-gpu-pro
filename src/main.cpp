@@ -25,7 +25,7 @@
 
 
 tga::Interface tgai;
-float aspectRatio;
+glm::uvec2 viewport;
 int targetFPS = 144;
 
 double getDeltaTime()
@@ -95,7 +95,7 @@ void processInputs(const tga::Window& win, Scene& scene, double dt)
 
     if(cameraUpdated)
     {
-        scene.updateSceneBufferCameraData(aspectRatio);
+        scene.updateSceneBufferCameraData(viewport);
     }
 
 }
@@ -147,7 +147,7 @@ int main(int argc, const char *argv[])
     // Window with the resolution of your screen
     auto [wWidth, wHeight] = tgai.screenResolution();
     auto win = tgai.createWindow({ wWidth, wHeight, tga::PresentMode::vsync });
-    aspectRatio = (float)wWidth / wHeight;
+    viewport = glm::uvec2(wWidth, wHeight);
     // Scene
     Scene scene(tgai);
     // Setup the camera
@@ -165,7 +165,7 @@ int main(int argc, const char *argv[])
 
 
     // Update Camera Data at the beginning
-    scene.updateSceneBufferCameraData(aspectRatio);
+    scene.updateSceneBufferCameraData(viewport);
 
     // Prepare the vertex layout for the meshes (all the obj loaded meshes share the same structure)
     tga::VertexLayout vertexLayout(

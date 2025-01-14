@@ -43,11 +43,13 @@ void Scene::prepareSceneUniformBuffer(tga::Interface& tgai)
 	sceneBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(SceneUniformBuffer), sceneStagingBuffer });
 }
 
-void Scene::updateSceneBufferCameraData(float aspectRatio)
+void Scene::updateSceneBufferCameraData(glm::uvec2 viewport)
 {
-	pSceneStagingBuffer->projectionView = m_camera.projection(aspectRatio) * m_camera.view();
+	m_camera.setViewport(viewport);
+	pSceneStagingBuffer->projectionView = m_camera.projection() * m_camera.view();
 	pSceneStagingBuffer->invProjectionView = glm::inverse(pSceneStagingBuffer->projectionView);
 	pSceneStagingBuffer->cameraPos = m_camera.getPosition();
+	pSceneStagingBuffer->viewport = glm::vec2(viewport.x, viewport.y);
 }
 
 void Scene::bufferUpload(tga::CommandRecorder& recorder)
