@@ -43,7 +43,7 @@ double getDeltaTime()
 
 void processInputs(const tga::Window& win, Scene& scene, double dt)
 {
-    float speed = 0.8;
+    float speed = 0.3;
     if(tgai.keyDown(win, tga::Key::Shift_Left))
     {
         speed *= 2;
