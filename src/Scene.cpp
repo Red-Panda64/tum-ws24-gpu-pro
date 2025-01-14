@@ -46,6 +46,7 @@ void Scene::prepareSceneUniformBuffer(tga::Interface& tgai)
 void Scene::updateSceneBufferCameraData(float aspectRatio)
 {
 	pSceneStagingBuffer->projectionView = m_camera.projection(aspectRatio) * m_camera.view();
+	pSceneStagingBuffer->invProjectionView = glm::inverse(pSceneStagingBuffer->projectionView);
 	pSceneStagingBuffer->cameraPos = m_camera.getPosition();
 }
 

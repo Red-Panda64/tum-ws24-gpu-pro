@@ -1,29 +1,11 @@
 #version 460
 #include "shadow_map.h"
+#include "scene.h"
 
-struct DirLight
+layout(set = 0, binding = 0) uniform UScene
 {
-    vec3 direction;
-    vec3 color;
+    Scene scene;
 };
-
-struct PointLight
-{
-    vec3 position;
-    vec3 color;
-    vec3 attenuationFactors; // constant, linear and quadratic in order
-};
-
-#define MAX_NR_OF_POINT_LIGHTS 16
-layout(set = 0, binding = 0) uniform Scene
-{
-    mat4 projectionView;
-    vec3 camPos;
-    DirLight dirLight;
-    PointLight pointLights[MAX_NR_OF_POINT_LIGHTS];
-    int nrPointLights;
-    float ambientFactor;
-} scene;
 
 layout(set = 0, binding = 1) uniform DirShadower
 {

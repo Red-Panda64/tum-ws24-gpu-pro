@@ -23,6 +23,7 @@ struct PointLight
 struct SceneUniformBuffer
 {
     alignas(16) glm::mat4 projectionView;
+    alignas(16) glm::mat4 invProjectionView;
     alignas(16) glm::vec3 cameraPos;
     alignas(16) DirLight dirLight;
     alignas(16) PointLight pointLights[MAX_NR_OF_POINT_LIGHTS];
