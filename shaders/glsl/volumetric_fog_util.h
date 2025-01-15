@@ -22,7 +22,7 @@
     SOFTWARE.
 */
 
-#define FOG_RANGE 100.0 // TODO: Make it parameterizable? If we add ImGui 
+#define FOG_RANGE 1000.0 // TODO: Make it parameterizable? If we add ImGui
 #define DEPTH_PACK_EXPONENT 2.0
 #define VOLUME_WIDTH  512.0
 #define VOLUME_HEIGHT 256.0
@@ -39,7 +39,7 @@ vec3 ndcFromThreadID(uvec3 threadID)
 vec3 ndcFromThreadID(vec3 threadID)
 {
     // Similar to above but used when jittering is used for sampling.
-    return (threadID.xyz + 0.5f) * vec3(2.0f / VOLUME_WIDTH, 2.0f / VOLUME_HEIGHT, 1.0f / VOLUME_DEPTH) + vec3(-1, 1, 0);
+    return (threadID.xyz + 0.5f) * vec3(2.0f / VOLUME_WIDTH, 2.0f / VOLUME_HEIGHT, 1.0f / VOLUME_DEPTH) + vec3(-1, -1, 0);
 }
 
 vec3 worldPositionFromNdcCoords(vec2 ndcPos, float linearDepth)
