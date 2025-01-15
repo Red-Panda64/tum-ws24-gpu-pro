@@ -23,7 +23,7 @@ vec3 worldPositionFromNdcCoords(vec2 ndcPos, float linearDepth)
 {
     vec3 eyeRay = (cameraXAxis.xyz * ndcPos.xxx +
         cameraYAxis.xyz * ndcPos.yyy +
-        -cameraZAxis.xyz);
+        cameraZAxis.xyz);
 
     vec3 viewRay = eyeRay * linearDepth;
     vec3 worldPos = cameraPos.xyz + viewRay;
@@ -61,6 +61,6 @@ vec4 getRotatedPhaseFunctionSH(vec3 dir, float g)
 
 vec3 applyFog(sampler3D scatteringVolume, vec3 color, vec3 screenSpace) {
 	vec3 uvw = volumeTextureSpaceFromScreenSpace(screenSpace);
-	vec4 inScatteringExtinction = texture(scatteringVolume, uvw);
-	return vec3(color * inScatteringExtinction.a + inScatteringExtinction.rgb);
+	vec4 inScatteringTransmittance = texture(scatteringVolume, uvw);
+	return vec3(color * inScatteringTransmittance.a + inScatteringTransmittance.rgb);
 }

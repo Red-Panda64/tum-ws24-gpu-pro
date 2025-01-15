@@ -20,18 +20,25 @@ vec4 AccumulateScattering(in vec4 colorAndDensityFront, in vec4 colorAndDensityB
     return vec4(light.rgb, colorAndDensityFront.a + colorAndDensityBack.a);
 }
 
+void postprocessAndStore(ivec3 imageCoords, vec4 inScatteringExtinction) {
+    // replace extinction with transmittance
+    inScatteringExtinction.a = clamp(exp(-inScatteringExtinction.a), 0.0, 1.0);
+    imageStore(accVolume, imageCoords, inScatteringExtinction);
+}
+
 void main() {
     if(any(greaterThanEqual(gl_GlobalInvocationID, resolution))) {
         return;
     }
 
     vec4 currentSliceValue = imageLoad(inVolume, ivec3(gl_GlobalInvocationID.xy, 0)).rgba;
-    imageStore(accVolume, ivec3(gl_GlobalInvocationID.xy, 0), currentSliceValue);
+    //currentSliceValue = AccumulateScattering(vec4(0.0, 0.0, 0.0, 0.0), currentSliceValue);
+    postprocessAndStore(ivec3(gl_GlobalInvocationID.xy, 0), currentSliceValue);
 
     for (int z = 1; z < int(resolution.z); z++)
     {
         vec4 nextValue = imageLoad(inVolume, ivec3(gl_GlobalInvocationID.xy, z)).rgba;
         currentSliceValue = AccumulateScattering(currentSliceValue, nextValue);
-        imageStore(accVolume, ivec3(gl_GlobalInvocationID.xy, z), currentSliceValue);
+        postprocessAndStore(ivec3(gl_GlobalInvocationID.xy, z), currentSliceValue);
     }
 }
