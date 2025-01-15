@@ -46,23 +46,12 @@ vec3 worldPositionFromNdcCoords(vec2 ndcPos, float linearDepth)
 {
     vec3 eyeRay = (cameraXAxis.xyz * ndcPos.xxx +
         cameraYAxis.xyz * ndcPos.yyy +
-        cameraZAxis.xyz);
+        -cameraZAxis.xyz);
 
     vec3 viewRay = eyeRay * linearDepth;
     vec3 worldPos = cameraPos.xyz + viewRay;
 
     return worldPos;
-}
-
-vec3 getViewVector(vec2 ndcPos, float linearDepth)
-{
-    vec3 eyeRay = (cameraXAxis.xyz * ndcPos.xxx +
-        cameraYAxis.xyz * ndcPos.yyy +
-        cameraZAxis.xyz);
-
-    vec3 viewRay = eyeRay * linearDepth;
-
-    return viewRay;
 }
 
 float volumeZPosToDepth(float volumePosZ)
