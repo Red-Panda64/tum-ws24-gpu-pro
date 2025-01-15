@@ -103,7 +103,7 @@ void main()
 		result += calculatePointLight(scene.pointLights[i], n, vIn.fragWorldPos, fragToCamera, diffuseTextureValue, specularTextureValue);
 	}
 
-    float linearDepth = dot(scene.camPos - vIn.fragWorldPos, cameraZAxis);
+    float linearDepth = dot(vIn.fragWorldPos - scene.camPos, cameraZAxis);
 	result = applyFog(scatteringVolume, result, vec3(gl_FragCoord.xy / scene.viewport, clamp(depthToVolumeZPos(linearDepth), 0.0, 1.0)));
 	color = vec4(result, 1.0f);
 }

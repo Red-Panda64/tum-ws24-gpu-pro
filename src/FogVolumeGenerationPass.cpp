@@ -57,9 +57,15 @@ void FogVolumeGenerationPass::update(const Scene &scene, uint32_t nf)
 
     const Camera &camera = scene.camera();
     generationInputsData->cameraPos = camera.getPosition();
-    generationInputsData->cameraXAxis = camera.right();
-    generationInputsData->cameraYAxis = camera.up();
-    generationInputsData->cameraZAxis = camera.front();
+
+    glm::mat4 projection = camera.projection();
+    float projWidth = projection[0][0];
+    float projHeight = projection[1][1];
+
+    glm::mat4 invView = glm::inverse(camera.view());
+    generationInputsData->cameraXAxis = invView * glm::vec4(1.0f / projWidth, 0, 0, 0);
+    generationInputsData->cameraYAxis = invView * glm::vec4(0, 1.0f / projHeight, 0, 0);
+    generationInputsData->cameraZAxis = invView * glm::vec4(0, 0, -1, 0);
     generationInputsData->dirLight = scene.dirLight();
     generationInputsData->frameNumber = nf;
     generationInputsData->resolution = resolution;
