@@ -2,7 +2,7 @@
 #include <filesystem>
 
 
-tga::Texture loadTex(tga::Interface& tgai, const std::string& file)
+tga::Texture loadTex(tga::Interface& tgai, const std::string& file, bool normalMap = false)
 {
     int w, h, channels;
     uint8_t* p = stbi_load(file.c_str(), &w, &h, &channels, STBI_rgb_alpha);
@@ -13,6 +13,15 @@ tga::Texture loadTex(tga::Interface& tgai, const std::string& file)
     }
 
     tga::StagingBuffer textureStagingBuffer = tgai.createStagingBuffer({ 4 * (uint32_t)w * (uint32_t)h, p });
+    tga::Format textureFormat;
+    if(!normalMap)
+    {
+        textureFormat = tga::Format::r8g8b8a8_srgb;
+    }
+    else
+    {
+        textureFormat = tga::Format::r8g8b8a8_unorm;
+    }
     tga::Texture texture = tgai.createTexture(tga::TextureInfo{ (uint32_t)w, (uint32_t)h, tga::Format::r8g8b8a8_srgb, tga::SamplerMode::linear, tga::AddressMode::repeat }.setSrcData(textureStagingBuffer));
     free(p);
     tgai.free(textureStagingBuffer);
@@ -33,7 +42,7 @@ Mesh::Mesh(tga::Interface& tgai, const char* obj, const tga::VertexLayout& verte
     indicesArray = loadedObj.indexBuffer;
     // Load the textures
     albedoMap = loadTex(tgai, albedoTexturePath);
-    normalMap = loadTex(tgai, normalTexturePath);
+    normalMap = loadTex(tgai, normalTexturePath, true);
     metallicMap = loadTex(tgai, metallicTexturePath);
     roughnessMap = loadTex(tgai, roughnessTexturePath);
     aoMap = loadTex(tgai, aoTextureMap);
