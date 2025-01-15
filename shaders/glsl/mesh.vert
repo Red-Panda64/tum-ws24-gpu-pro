@@ -38,6 +38,7 @@ layout(set = 2, binding = 0) uniform ModelTransforms
 layout(location = 0) out VOut
 {
     vec3 normal;
+    vec3 tangent;
     vec3 fragWorldPos; // for light calculations
     vec2 uv;
 } vOut;
@@ -45,7 +46,9 @@ layout(location = 0) out VOut
 void main()
 {
     vec4 intermediateWorldPos = modelTransform.model * vec4(vertex_position, 1.0);
-    vOut.normal = mat3(inverse(transpose(modelTransform.model))) * vertex_normal;
+    mat3 normalTransformation = mat3(inverse(transpose(modelTransform.model))); 
+    vOut.normal = normalTransformation * vertex_normal;
+    vOut.tangent = normalTransformation * vertex_tangent;
     vOut.fragWorldPos = vec3(intermediateWorldPos);
     vOut.uv = vertex_uv;
     gl_Position = scene.projectionView * intermediateWorldPos;

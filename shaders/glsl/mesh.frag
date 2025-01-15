@@ -39,6 +39,7 @@ layout(set = 1, binding = 4) uniform sampler2D aoMap;
 layout(location = 0) in VIn
 {
     vec3 normal;
+    vec3 tangent;
     vec3 fragWorldPos; // for light calculations
 	vec2 uv;
 } vIn;
@@ -48,20 +49,14 @@ layout(location = 0) out vec4 color;
 #define PI 3.14159265358979323846
 
 /*
-	Easy trick to get tangent-normals to world-space. Not the most performant.
-	TODO: Perform a proper normal mapping
+	Get tangent-normals to world-space.
 */
 vec3 fetchNormalFromMap()
 {
     vec3 tangentNormal = texture(normalMap, vIn.uv).xyz * 2.0 - 1.0;
 
-    vec3 Q1  = dFdx(vIn.fragWorldPos);
-    vec3 Q2  = dFdy(vIn.fragWorldPos);
-    vec2 st1 = dFdx(vIn.uv);
-    vec2 st2 = dFdy(vIn.uv);
-
     vec3 N   = normalize(vIn.normal);
-    vec3 T  = normalize(Q1*st2.t - Q2*st1.t);
+    vec3 T  = normalize(vIn.tangent);
     vec3 B  = -normalize(cross(N, T));
     mat3 TBN = mat3(T, B, N);
 
