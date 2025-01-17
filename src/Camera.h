@@ -8,7 +8,7 @@ class Camera
 {
 public:
     Camera();
-    Camera(const glm::vec3& pos_in, const glm::quat& quat_in);
+    Camera(const glm::vec3& pos_in, float pitch_in, float yaw_in, float roll_in);
 
     //Getters
     const glm::vec3 getPosition() const;
@@ -30,12 +30,11 @@ public:
     void moveYDir(float direction, float deltaTime, float speed);
     void moveZDir(float direction, float deltaTime, float speed);
     //Rotation
-    void rotate(float angle, glm::vec3& axis);
     void rotateWithMouseInput(double xPos, double yPos);
     //Camera-Axis relative rotations
-    void pitch(float angle);
-    void yaw(float angle);
-    void roll(float angle);
+    void rotateX(float angle);
+    void rotateY(float angle);
+    void rotateZ(float angle);
 
     void updateLastMousePos(double x, double y);
 
@@ -47,11 +46,14 @@ public:
 
 private:
     glm::vec3 position;
-    glm::quat orientation;
     float fov = 45.0f;
     // Viewport dimensions
     glm::uvec2 viewport;
     //These are the last positions camera looks at (pixelwise)
     double lastX;
     double lastY;
+    // In radians
+    float pitch;
+    float yaw;
+    float roll;
 };

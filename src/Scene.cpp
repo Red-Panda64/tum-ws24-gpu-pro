@@ -5,9 +5,9 @@ Scene::Scene(tga::Interface& tgai)
 	prepareSceneUniformBuffer(tgai);
 }
 
-void Scene::initCamera(const glm::vec3& pos, const glm::quat& orientation)
+void Scene::initCamera(const glm::vec3& pos, float pitch, float yaw, float roll)
 {
-	m_camera = Camera(pos, orientation);
+	m_camera = Camera(pos, pitch, yaw, roll);
 }
 
 void Scene::setDirLight(const glm::vec3& direction, const glm::vec3& color)

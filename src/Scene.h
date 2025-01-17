@@ -36,7 +36,7 @@ class Scene
 {
 public:
     Scene(tga::Interface& tgai);
-    void initCamera(const glm::vec3& pos, const glm::quat& orientation);
+    void initCamera(const glm::vec3& pos, float pitch, float yaw, float roll);
     void setDirLight(const glm::vec3& direction, const glm::vec3& color);
     void addPointLight(const glm::vec3& position, const glm::vec3& color, const glm::vec3& attenuationFactors);
     void setAmbientFactor(float ambientFactor);

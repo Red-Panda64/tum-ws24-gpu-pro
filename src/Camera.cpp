@@ -6,14 +6,18 @@
 Camera::Camera()
 {
     position = glm::vec3(0.0f, 0.0f, 0.0f);
-    orientation = glm::quat(0.0, 0.0, 0.0, 1.0);
+    pitch = 0;
+    yaw = 0;
+    roll = 0;
 }
 
 
-Camera::Camera(const glm::vec3& pos_in, const glm::quat& quat_in)
+Camera::Camera(const glm::vec3& pos_in, float pitch_in, float yaw_in, float roll_in)
 {
     position = pos_in;
-    orientation = quat_in;
+    pitch = pitch_in;
+    yaw = yaw_in;
+    roll = roll_in;
 }
 
 const glm::vec3 Camera::getPosition() const
@@ -74,13 +78,6 @@ void Camera::moveZDir(float direction, float deltaTime, float speed)
     position += deltaTime * speed * direction * front();
 }
 
-void Camera::rotate(float angle, glm::vec3& axis)
-{
-    glm::quat rot = glm::normalize(glm::angleAxis(angle, axis));
-
-    orientation = orientation * rot;
-}
-
 void Camera::rotateWithMouseInput(double xPos, double yPos)
 {
     //Calculate the offset from given mouse positions.
@@ -94,37 +91,24 @@ void Camera::rotateWithMouseInput(double xPos, double yPos)
 
     xOffset *= 0.001;
     yOffset *= 0.001;
-
-    //TODO: Try to convert them into actual angles, you are just assigning offsets as angles.
-    //Note that as we move the mouse to the right, we actually decrement the yaw angle so we need to subtract.
     
-    yaw(xOffset);
-    pitch(-yOffset);
-
-    //yaw = glm::mod(yaw - xOffset, 360.0);
-    //pitch += yOffset;
+    yaw = yaw - xOffset;
+    pitch += yOffset;
 }
 
-void Camera::pitch(float angle)
+void Camera::rotateX(float angle)
 {
-    glm::quat rot = glm::normalize(glm::angleAxis(angle, right()));
-
-    orientation = orientation * rot;
+    pitch += angle;
 }
 
-void Camera::yaw(float angle)
-
+void Camera::rotateY(float angle)
 {
-    glm::quat rot = glm::normalize(glm::angleAxis(angle, up()));
-
-    orientation = orientation * rot;
+    yaw += angle;
 }
 
-void Camera::roll(float angle)
+void Camera::rotateZ(float angle)
 {
-    glm::quat rot = glm::normalize(glm::angleAxis(angle, front()));
-
-    orientation = orientation * rot;
+    roll += angle;
 }
 
 void Camera::updateLastMousePos(double x, double y)
@@ -140,6 +124,12 @@ glm::mat4 Camera::translation() const
 
 glm::mat4 Camera::rotation() const
 {
+    glm::quat orientation = glm::quat(0.0, 0.0, 0.0, 1.0);
+
+    orientation = orientation * glm::normalize(glm::angleAxis(pitch, glm::vec3(1.0, 0.0, 0.0)));
+    orientation = orientation * glm::normalize(glm::angleAxis(yaw, glm::vec3(0.0, 1.0, 0.0)));
+    orientation = orientation * glm::normalize(glm::angleAxis(roll, glm::vec3(0.0, 0.0, -1.0)));
+
     return glm::toMat4(orientation);
 }
 
