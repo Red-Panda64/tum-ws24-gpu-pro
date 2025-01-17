@@ -293,9 +293,9 @@ int main(int argc, const char *argv[])
             //recorder.bindInputSet(windowInputSet);
             //recorder.bindInputSet(windowTransformInputSet);
             //windowDrawable.draw(recorder);
-            //recorder.bindInputSet(planeInputSet);
-            //recorder.bindInputSet(planeTransformInputSet);
-            //planeDrawable.draw(recorder);
+            recorder.bindInputSet(planeInputSet);
+            recorder.bindInputSet(planeTransformInputSet);
+            planeDrawable.draw(recorder);
             recorder.bindInputSet(pbrTextureInputSet);
             recorder.bindInputSet(pbrMeshTransformInputSet);
             pbrDrawable.draw(recorder);
