@@ -37,7 +37,7 @@ float calculateDensityFunction(vec3 worldSpacePos)
 {
     // some procedural effect
     // return turbulence(worldSpacePos * 0.35f + vec3(time * 0.1f, 0, 0), 2) * exp(-worldSpacePos.y * 0.5f);
-    return exp(-worldSpacePos.y * 0.5f);
+    return clamp(exp(-worldSpacePos.y * 0.01), 0.0, 1.0) * 0.1;
 }
 
 // some generated Poisson-like distribution
@@ -91,6 +91,8 @@ void main()
     vec3 screenCoords = ndcFromThreadID(max(vec3(gl_GlobalInvocationID) + vec3(currFrameJitter, 0.0f), 0.0f));
     float linearDepth = volumeZPosToDepth(screenCoords.z);
     float layerThickness = volumeZPosToDepth(screenCoords.z + 1.0f / VOLUME_DEPTH) - linearDepth;
+    // Our scene is at a much greater scale with much more fog range, hence the units are off
+    layerThickness *= 0.01f;
 
     // TODO: ADD TEMPORAL REPROJECTION
 
@@ -100,7 +102,7 @@ void main()
     // float scattering = g_VolumetricFogFinalScattering * (0.1f + dustDensity) * layerThickness;
     float scattering = (0.1f + dustDensity) * layerThickness;
     float absorbtion = 0.0f * layerThickness;
-    float anisotropy = 0.4;
+    float anisotropy = 0.2;
     vec3 fogAlbedo = vec3(1.0f, 1.0f, 0.9f);
     vec3 viewDir = normalize(worldSpacePos - cameraPos.xyz);
 
