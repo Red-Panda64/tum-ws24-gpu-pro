@@ -151,7 +151,7 @@ int main(int argc, const char *argv[])
     // Scene
     Scene scene(tgai);
     // Setup the camera
-    scene.initCamera(glm::vec3(0.0f, 10.0f, 10.0f), glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)));
+    scene.initCamera(glm::vec3(0.0f, 10.0f, 10.0f), 0.0f, 0.0f, glm::radians(180.0f));
     scene.setAmbientFactor(0.03f);
     // Directional light
     scene.setDirLight(glm::normalize(glm::vec3(10.0f, -10.0f, -1.0f)), glm::vec3(1.0f));
@@ -293,9 +293,9 @@ int main(int argc, const char *argv[])
             //recorder.bindInputSet(windowInputSet);
             //recorder.bindInputSet(windowTransformInputSet);
             //windowDrawable.draw(recorder);
-            recorder.bindInputSet(planeInputSet);
-            recorder.bindInputSet(planeTransformInputSet);
-            planeDrawable.draw(recorder);
+            //recorder.bindInputSet(planeInputSet);
+            //recorder.bindInputSet(planeTransformInputSet);
+            //planeDrawable.draw(recorder);
             recorder.bindInputSet(pbrTextureInputSet);
             recorder.bindInputSet(pbrMeshTransformInputSet);
             pbrDrawable.draw(recorder);
