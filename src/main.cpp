@@ -154,7 +154,7 @@ int main(int argc, const char *argv[])
     scene.initCamera(glm::vec3(0.0f, 0.0f, 500.0f), glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)));
     scene.setAmbientFactor(0.05f);
     // Directional light
-    scene.setDirLight(glm::vec3(1.0f, -1.0f, 1.0f), glm::vec3(1.0f, 1.0, 1.0f));
+    scene.setDirLight(glm::normalize(glm::vec3(1.0f, -1.0f, 1.0f)), glm::vec3(1.0f, 1.0, 1.0f));
     static std::mt19937 rng(std::random_device{}());
     for(int i = 0; i < MAX_NR_OF_POINT_LIGHTS; ++i)
     {

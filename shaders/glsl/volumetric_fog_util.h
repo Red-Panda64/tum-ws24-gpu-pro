@@ -69,7 +69,7 @@ vec3 volumeTextureSpaceFromScreenSpace(vec3 volumeSS)
     return clamp(volumeSS, 0.0, 1.0) * vec3((VOLUME_WIDTH - 1) / VOLUME_WIDTH, (VOLUME_HEIGHT - 1) / VOLUME_HEIGHT, (VOLUME_DEPTH - 1) / VOLUME_DEPTH) + vec3(0.5f / VOLUME_WIDTH, 0.5f / VOLUME_HEIGHT, 0.5f / VOLUME_DEPTH);
 }
 
-float getPhaseFunction(in float cosPhi, float gFactor)
+float getPhaseFunction(float cosPhi, float gFactor)
 {
     float gFactor2 = gFactor * gFactor;
     return (1 - gFactor2) / pow(abs(1 + gFactor2 - 2 * gFactor * cosPhi), 1.5f) * (1.0f / 4.0f * PI);
