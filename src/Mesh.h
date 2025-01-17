@@ -22,9 +22,14 @@ class Mesh
 {
 public:
 	Mesh(tga::Interface& tgai, const char* objPath, const tga::VertexLayout& vertexLayout);
+
+    tga::InputSet getTextureInputSet(tga::Interface& tgai, const tga::RenderPass rp) const;
 public:
     std::vector<tga::Vertex> verticesArray;
     std::vector<uint32_t> indicesArray;
-    tga::Texture diffuseTexture;
-    tga::Texture specularTexture;
+    tga::Texture albedoMap;
+    tga::Texture normalMap;
+    tga::Texture metallicMap;
+    tga::Texture roughnessMap;
+    tga::Texture aoMap;
 };
