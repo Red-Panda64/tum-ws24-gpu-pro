@@ -1,4 +1,6 @@
 #version 460
+#extension GL_GOOGLE_include_directive : enable
+#include "util.h"
 
 layout(local_size_x=4, local_size_y=4, local_size_z=4) in;
 
@@ -18,9 +20,13 @@ layout(set = 0, binding = 2) uniform VolumeGenerationInputs
     vec3 cameraXAxis;
     vec3 cameraYAxis;
     vec3 cameraZAxis;
+    float zNear;
+    float zFar;
+    mat4 prevFrameVP;
     DirLight dirLight;
     float time;
     int frameNumber;
+    float historyFactor;
 };
 
 layout(set = 0, binding = 3) uniform DirShadower
@@ -37,7 +43,7 @@ float calculateDensityFunction(vec3 worldSpacePos)
 {
     // some procedural effect
     // return turbulence(worldSpacePos * 0.35f + vec3(time * 0.1f, 0, 0), 2) * exp(-worldSpacePos.y * 0.5f);
-    return clamp(exp(-worldSpacePos.y * 0.01), 0.0, 1.0) * 0.1;
+    return clamp(exp(-worldSpacePos.y * 0.01), 0.0, 1.0) * 1.5;
 }
 
 // some generated Poisson-like distribution
@@ -76,34 +82,35 @@ vec3 getAmbient(vec3 worldPosition, vec3 viewDir, float anisotropy)
 //    
 //    return lighting;
 
-    return 0.01f * dirLight.color;
+    return 0.001f * dirLight.color;
 }
 
 
 
 void main() 
 {
+    if(any(greaterThanEqual(gl_GlobalInvocationID, resolution))) {
+        return;
+    }
     // bool reprojectionOn = g_VolumetricFogReprojectionOn > 0.5f;
-    bool reprojectionOn = false;
+    bool reprojectionOn = historyFactor > 0.0f;
     
     vec2 currFrameJitter = reprojectionOn ? (POISSON_SAMPLES[(frameNumber + gl_GlobalInvocationID.x + gl_GlobalInvocationID.y * 2) % SAMPLE_NUM] - 0.5f) : vec2(0.0f);
 
-    vec3 screenCoords = ndcFromThreadID(max(vec3(gl_GlobalInvocationID) + vec3(currFrameJitter, 0.0f), 0.0f));
+    vec3 screenCoords = ndcFromThreadID(max(vec3(gl_GlobalInvocationID) + vec3(currFrameJitter, 0.0f), 0.0f), resolution);
     float linearDepth = volumeZPosToDepth(screenCoords.z);
-    float layerThickness = volumeZPosToDepth(screenCoords.z + 1.0f / VOLUME_DEPTH) - linearDepth;
+    float layerThickness = volumeZPosToDepth(screenCoords.z + 1.0f / float(resolution.z)) - linearDepth;
     // Our scene is at a much greater scale with much more fog range, hence the units are off
     layerThickness *= 0.01f;
-
-    // TODO: ADD TEMPORAL REPROJECTION
 
     vec3 worldSpacePos = worldPositionFromNdcCoords(screenCoords.xy, linearDepth);
 
     float dustDensity = calculateDensityFunction(worldSpacePos); //InputTexture[gl_GlobalInvocationID].x;
     // float scattering = g_VolumetricFogFinalScattering * (0.1f + dustDensity) * layerThickness;
     float scattering = (0.1f + dustDensity) * layerThickness;
-    float absorbtion = 0.0f * layerThickness;
-    float anisotropy = 0.2;
-    vec3 fogAlbedo = vec3(1.0f, 1.0f, 0.9f);
+    float absorption = 0.1f * layerThickness;
+    float anisotropy = -0.3;
+    vec3 fogAlbedo = vec3(0.8f, 0.8f, 0.7f);
     vec3 viewDir = normalize(worldSpacePos - cameraPos.xyz);
 
     vec3 lighting = vec3(0.0f);
@@ -115,10 +122,21 @@ void main()
 
     lighting *= fogAlbedo;
 
-    vec4 finalOutValue = vec4(lighting * scattering, scattering + absorbtion);
+    vec4 finalOutValue = vec4(lighting * scattering, scattering + absorption);
 
-    // vec4 fogWithReprojection = lerp(finalOutValue, fogPrevFrame, reprojectionValid);
-    // volumeOut[gl_GlobalInvocationID].rgba = fogWithReprojection;
-    // imageStore(volumeOut, gl_GlobalInvocationID, fogWithReprojection);
+    if(reprojectionOn) {
+        vec3 ndcNoJitter = ndcFromThreadID(max(vec3(gl_GlobalInvocationID), 0.0f), resolution);
+        float linearDepthNoJitter = volumeZPosToDepth(ndcNoJitter.z);
+        vec3 worldSpacePosNoJitter = worldPositionFromNdcCoords(ndcNoJitter.xy, linearDepthNoJitter);
+        vec4 prevFrameProjected = prevFrameVP * vec4(worldSpacePosNoJitter, 1.0);
+        vec3 prevFrameNdc = prevFrameProjected.xyz / prevFrameProjected.w;
+        float prevFrameLinearDepth = linearizeDepth(prevFrameNdc.z, zNear, zFar);
+        vec3 uvw = vec3(prevFrameNdc.xy * 0.5f + 0.5f, depthToVolumeZPos(prevFrameLinearDepth));
+        if(all(greaterThanEqual(uvw, vec3(0.0f))) && all(lessThanEqual(uvw, vec3(1.0f, 1.0f, 1.0f)))) {
+            vec4 fogPrevFrame = texture(volumeIn, uvw);
+            finalOutValue = mix(finalOutValue, fogPrevFrame, historyFactor);
+        }
+    }
+
     imageStore(volumeOut, ivec3(gl_GlobalInvocationID), finalOutValue);
 }

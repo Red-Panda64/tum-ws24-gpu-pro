@@ -43,6 +43,8 @@ public:
     glm::mat4 rotation() const;
     glm::mat4 view() const;
     glm::mat4 projection() const;
+    float zNear() const;
+    float zFar() const;
 
 private:
     glm::vec3 position;
@@ -56,4 +58,7 @@ private:
     float pitch;
     float yaw;
     float roll;
+
+    float m_zNear;
+    float m_zFar;
 };

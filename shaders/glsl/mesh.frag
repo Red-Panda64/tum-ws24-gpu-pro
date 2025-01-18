@@ -1,6 +1,9 @@
 #version 460
+#extension GL_GOOGLE_include_directive : enable
+
 #include "shadow_map.h"
 #include "scene.h"
+#include "util.h"
 
 layout(set = 0, binding = 0) uniform UScene
 {
@@ -23,9 +26,13 @@ layout(set = 0, binding = 4) uniform VolumeGenerationInputs
     vec3 cameraXAxis;
     vec3 cameraYAxis;
     vec3 cameraZAxis;
+	float zNear;
+    float zFar;
+    mat4 prevFrameVP;
     DirLight dirLight;
     float time;
     int frameNumber;
+	float historyFactor;
 };
 
 #include "volumetric_fog_util.h"
@@ -201,8 +208,7 @@ void main()
 	vec3 outColor = ambient + Lo;
 
 	// Add Fog (Need to test how to incorporate HDR tonemapping and gamma correction. I think first operate on linear space and finally apply HDR tonemapping and gamma correction alltogether)
-
-	float linearDepth = dot(vIn.fragWorldPos - scene.camPos, cameraZAxis);
+    float linearDepth = linearizeDepth(gl_FragCoord.z, scene.zNear, scene.zFar);
 	outColor = applyFog(scatteringVolume, outColor, vec3(gl_FragCoord.xy / scene.viewport, clamp(depthToVolumeZPos(linearDepth), 0.0, 1.0)));
 
 	// HDR tonemapping (Reinhardt operator)

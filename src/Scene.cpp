@@ -49,6 +49,8 @@ void Scene::updateSceneBufferCameraData(glm::uvec2 viewport)
 	pSceneStagingBuffer->projectionView = m_camera.projection() * m_camera.view();
 	pSceneStagingBuffer->invProjectionView = glm::inverse(pSceneStagingBuffer->projectionView);
 	pSceneStagingBuffer->cameraPos = m_camera.getPosition();
+	pSceneStagingBuffer->zNear = m_camera.zNear();
+	pSceneStagingBuffer->zFar = m_camera.zFar();
 	pSceneStagingBuffer->viewport = glm::vec2(viewport.x, viewport.y);
 }
 

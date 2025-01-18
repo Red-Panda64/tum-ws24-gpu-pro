@@ -19,6 +19,8 @@ struct Scene
     vec3 camPos;
     DirLight dirLight;
     PointLight pointLights[MAX_NR_OF_POINT_LIGHTS];
+    float zNear;
+    float zFar;
     int nrPointLights;
     float ambientFactor;
     vec2 viewport;

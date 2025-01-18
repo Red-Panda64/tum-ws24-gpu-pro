@@ -1,5 +1,6 @@
 #pragma once
 #include <chrono>
+#include <optional>
 
 #include "tga/tga.hpp"
 #include "Scene.h"
@@ -12,7 +13,7 @@ public:
     FogVolumeGenerationPass(const FogVolumeGenerationPass &) = delete;
     FogVolumeGenerationPass &operator=(const FogVolumeGenerationPass &) = delete;
 
-    void update(const Scene &scene, uint32_t nf);
+    void update(const Scene &scene, uint32_t nf, float historyFactor);
     void upload(tga::CommandRecorder &recorder) const;
     void execute(tga::CommandRecorder &recorder, uint32_t nf) const;
     tga::Buffer inputBuffer() const;
@@ -24,9 +25,13 @@ private:
         alignas(16) glm::vec3 cameraXAxis;
         alignas(16) glm::vec3 cameraYAxis;
         alignas(16) glm::vec3 cameraZAxis;
+        alignas(4)  float zNear;
+        alignas(4)  float zFar;
+        alignas(16) glm::mat4 prevFrameVP;
         alignas(16) DirLight dirLight;
         alignas(4) float time;
         alignas(4) int frameNumber;
+        alignas(4) float historyFactor;
     };
 
     tga::Interface *tgai;
@@ -41,4 +46,5 @@ private:
     tga::Buffer generationInputsBuffer;
     std::array<tga::InputSet, 2> generationInputs;
     std::array<tga::InputSet, 2> accumulationInputs;
+    std::optional<glm::mat4> prevFrameVP;
 };

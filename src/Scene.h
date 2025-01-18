@@ -27,6 +27,8 @@ struct SceneUniformBuffer
     alignas(16) glm::vec3 cameraPos;
     alignas(16) DirLight dirLight;
     alignas(16) PointLight pointLights[MAX_NR_OF_POINT_LIGHTS];
+    alignas(4)  float zNear;
+    alignas(4)  float zFar;
     alignas(4)  int nrPointLights;
     alignas(4)  float ambientFactor;
     alignas(8)  glm::vec2 viewport;

@@ -27,6 +27,7 @@
 tga::Interface tgai;
 glm::uvec2 viewport;
 int targetFPS = 144;
+float historyFactor = 0.85f;
 
 double getDeltaTime()
 {
@@ -80,6 +81,11 @@ void processInputs(const tga::Window& win, Scene& scene, double dt)
     {
         scene.moveCameraYDir(-1, dt, speed);
         cameraUpdated = true;
+    }
+
+    if(tgai.keyDown(win, tga::Key::Enter))
+    {
+        historyFactor = 1.0f;
     }
 
     // Camera Rotation
@@ -214,7 +220,7 @@ int main(int argc, const char *argv[])
     constexpr uint32_t SHADOW_MAP_RESX = 4096;
     constexpr uint32_t SHADOW_MAP_RESY = 4096;
     ShadowPass sp{ tgai, { SHADOW_MAP_RESX, SHADOW_MAP_RESY }, vertexLayout };
-    FogVolumeGenerationPass fp {tgai, { 512, 256, 128 }, sp};
+    FogVolumeGenerationPass fp {tgai, { 256, 256, 256 }, sp};
 
     // Create the Render pass
     auto rpInfo = tga::RenderPassInfo{vs, fs, win}
@@ -318,7 +324,8 @@ int main(int argc, const char *argv[])
     constexpr float historyWeight = 0.9;
     // Record and present until signal to close
     double time = 0.0;
-    while (!tgai.windowShouldClose(win)) 
+    uint64_t frameNumber = 0;
+    while (!tgai.windowShouldClose(win))
     {
         // FPS LIMITING
         // Maintain designated frequency of 1 / targetFPS
@@ -348,8 +355,8 @@ int main(int argc, const char *argv[])
         tgai.setWindowTitle(win, sstream.str());//std::format("[FPS]: {} (Smoothed: {})", fps, smoothedFps));
         processInputs(win, scene, dt);
         sp.update(scene, 0.001f, 0.04f);
+        fp.update(scene, frameNumber++, historyFactor);
         auto nf = tgai.nextFrame(win);
-        fp.update(scene, nf);
         auto& cmd = cmdBuffers[nf];
         tgai.execute(cmd);
         tgai.present(win, nf);
