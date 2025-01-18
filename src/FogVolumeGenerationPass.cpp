@@ -51,7 +51,7 @@ FogVolumeGenerationPass::~FogVolumeGenerationPass()
     tgai->free(cp);
 }
 
-void FogVolumeGenerationPass::update(const Scene &scene, uint32_t nf)
+void FogVolumeGenerationPass::update(const Scene &scene, uint32_t nf, float historyFactor)
 {
     float time = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(startTime - std::chrono::system_clock::now()).count();
 
@@ -62,14 +62,24 @@ void FogVolumeGenerationPass::update(const Scene &scene, uint32_t nf)
     float projWidth = projection[0][0];
     float projHeight = projection[1][1];
 
+    glm::mat4 vp = scene.viewProjection();
     glm::mat4 invView = glm::inverse(camera.view());
     generationInputsData->cameraXAxis = invView * glm::vec4(1.0f / projWidth, 0, 0, 0);
     generationInputsData->cameraYAxis = invView * glm::vec4(0, 1.0f / projHeight, 0, 0);
     generationInputsData->cameraZAxis = invView * glm::vec4(0, 0, -1, 0);
+    generationInputsData->zNear = camera.zNear();
+    generationInputsData->zFar  = camera.zFar();
     generationInputsData->dirLight = scene.dirLight();
     generationInputsData->frameNumber = nf;
+    if(prevFrameVP) {
+        generationInputsData->prevFrameVP = *prevFrameVP;
+    } else {
+        generationInputsData->prevFrameVP = vp;
+    }
     generationInputsData->resolution = resolution;
     generationInputsData->time = time;
+    generationInputsData->historyFactor = historyFactor;
+    prevFrameVP = vp;
 }
 
 void FogVolumeGenerationPass::upload(tga::CommandRecorder &recorder) const

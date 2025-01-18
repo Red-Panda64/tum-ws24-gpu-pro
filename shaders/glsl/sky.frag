@@ -1,4 +1,5 @@
 #version 460
+#extension GL_GOOGLE_include_directive : enable
 #include "shadow_map.h"
 #include "scene.h"
 
@@ -16,6 +17,8 @@ layout(set = 0, binding = 2) uniform VolumeGenerationInputs
     vec3 cameraXAxis;
     vec3 cameraYAxis;
     vec3 cameraZAxis;
+    float zNear;
+    float zFar;
     DirLight dirLight;
     float time;
     int frameNumber;

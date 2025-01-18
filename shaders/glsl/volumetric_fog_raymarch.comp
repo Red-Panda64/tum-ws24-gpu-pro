@@ -23,7 +23,7 @@
     SOFTWARE.
 */
 
-layout(local_size_x=4, local_size_y=4, local_size_z=4) in;
+layout(local_size_x=4, local_size_y=4, local_size_z=1) in;
 
 /* x,y,z: inscattering, a: extinction */
 layout(rgba32f, set = 0, binding = 0) uniform readonly image3D inVolume;
@@ -50,7 +50,7 @@ void postprocessAndStore(ivec3 imageCoords, vec4 inScatteringExtinction) {
 }
 
 void main() {
-    if(any(greaterThanEqual(gl_GlobalInvocationID, resolution))) {
+    if(any(greaterThanEqual(gl_GlobalInvocationID.xy, resolution.xy))) {
         return;
     }
 

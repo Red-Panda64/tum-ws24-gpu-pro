@@ -9,6 +9,8 @@ Camera::Camera()
     pitch = 0;
     yaw = 0;
     roll = 0;
+    m_zNear = 0.1f;
+    m_zFar  = 10000.f;
 }
 
 
@@ -18,6 +20,8 @@ Camera::Camera(const glm::vec3& pos_in, float pitch_in, float yaw_in, float roll
     pitch = pitch_in;
     yaw = yaw_in;
     roll = roll_in;
+    m_zNear = 0.1f;
+    m_zFar  = 10000.f;
 }
 
 const glm::vec3 Camera::getPosition() const
@@ -141,8 +145,18 @@ glm::mat4 Camera::view() const
 glm::mat4 Camera::projection() const
 {
     float aspectRatio = static_cast<float>(viewport.x) / viewport.y;
-    glm::mat4 projectionMat = glm::perspective(glm::radians(fov), aspectRatio, 0.1f, 10000.f);
+    glm::mat4 projectionMat = glm::perspectiveRH_ZO(glm::radians(fov), aspectRatio, m_zNear, m_zFar);
     // Vulkan's coordinate system has an inverted y wrt OpenGL
     projectionMat[1][1] *= -1;
     return projectionMat;
+}
+
+float Camera::zNear() const
+{
+    return m_zNear;
+}
+
+float Camera::zFar() const
+{
+    return m_zFar;
 }
