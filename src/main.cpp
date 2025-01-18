@@ -7,6 +7,7 @@
 #include <cstdlib>
 //#include <format>
 #include <sstream>
+#include <algorithm>
 
 
 #include "glm/gtc/type_ptr.hpp"
@@ -23,11 +24,201 @@
 #define PLACING_RADIUS 3000.0f
 #define M_PI 3.14159265358979323846
 
-
 tga::Interface tgai;
 glm::uvec2 viewport;
 int targetFPS = 144;
 float historyFactor = 0.85f;
+
+class BindingSetInstance;
+
+class BindingSetDescription {
+private:
+    friend class BindingSetInstance;
+    size_t set;
+    std::vector<tga::Binding> fixedBindings;
+    std::unordered_map<std::string, std::pair<size_t, size_t>> namedBindings;
+public:
+    BindingSetDescription(size_t set) : set{set} {}
+
+    BindingSetDescription &fix(tga::Binding binding) {
+        fixedBindings.push_back(binding);
+        return *this;
+    }
+
+    BindingSetDescription &declare(std::string name, size_t bindingLoc, size_t arraySlot) {
+        namedBindings.emplace(std::move(name), std::make_pair<size_t, size_t>(std::move(bindingLoc), std::move(arraySlot)));
+        return *this;
+    }
+};
+
+class BindingSetInstance {
+public:
+    BindingSetInstance(const BindingSetDescription &desc) : bindings{desc.fixedBindings}, desc{desc} {}
+
+    BindingSetInstance &assign(const std::string &name, tga::Binding::Resource resource) {
+        // for heterogenous lookup (std::string_view as permissible argument instead of std::string), switch to C++23
+        auto it = desc.namedBindings.find(name);
+        if(it != desc.namedBindings.end()) {
+            bindings.push_back(tga::Binding(resource, it->second.first, it->second.second));
+        }
+        return *this;
+    }
+
+    tga::InputSet build(tga::Interface &tgai, tga::RenderPass rp) {
+        return tgai.createInputSet({ rp, bindings, desc.set }); 
+    };
+
+private:
+    std::vector<tga::Binding> bindings;
+    const BindingSetDescription &desc;
+};
+
+struct HashRenderpass {
+    size_t operator()(const tga::RenderPass &rp) const {
+        TgaRenderPass tgarp = rp;
+        return std::hash<TgaRenderPass>{}(tgarp);
+    }
+};
+
+template<typename T>
+using PerRP = std::unordered_map<tga::RenderPass, T, HashRenderpass>;
+
+struct MeshTable {
+public:
+    MeshTable() = default;
+    ~MeshTable() {
+        for (auto &[_, inputSets] : mtoTextures) {
+            for(auto &[_, inputSet] : inputSets) {
+                tgai.free(inputSet);
+            }
+        }
+    }
+    MeshTable(const MeshTable &other) = delete;
+    MeshTable &operator=(const MeshTable &other) = delete;
+
+    void registerPass(tga::RenderPass rp, BindingSetDescription bDesc) {
+        registeredPasses.emplace_back(rp, std::move(bDesc));
+        const BindingSetDescription &bDescRef = registeredPasses.back().second;
+        for(auto &[meshTag, mesh] : registeredMeshes) {
+            createInputSet(meshTag, mesh, rp, bDescRef);
+        } 
+    }
+
+    void load(std::string meshTag) {
+        if(mtoD.find(meshTag) != mtoD.end())
+            return;
+        tga::VertexLayout vertexLayout(
+            sizeof(tga::Vertex),
+            {
+                {offsetof(tga::Vertex, position), tga::Format::r32g32b32_sfloat},
+                {offsetof(tga::Vertex, uv), tga::Format::r32g32_sfloat},
+                {offsetof(tga::Vertex, normal), tga::Format::r32g32b32_sfloat},
+                {offsetof(tga::Vertex, tangent), tga::Format::r32g32b32_sfloat},
+            }
+        );
+        Mesh mesh{tgai, ("../assets/" + meshTag + "/" + meshTag + ".obj").c_str(), vertexLayout};
+        mtoD.emplace(std::piecewise_construct,
+              std::forward_as_tuple(meshTag),
+              std::forward_as_tuple(tgai, mesh));
+        for(auto &[rp, bDesc] : registeredPasses) {
+            createInputSet(meshTag, mesh, rp, bDesc);
+        }
+
+        registeredMeshes.emplace_back(std::move(meshTag), std::move(mesh));
+    }
+
+    std::vector<std::pair<std::string, Mesh>> registeredMeshes;
+    std::unordered_map<std::string, Drawable> mtoD;
+    std::unordered_map<std::string, PerRP<tga::InputSet>> mtoTextures;
+    std::vector<std::pair<tga::RenderPass, BindingSetDescription>> registeredPasses;
+private:
+    void createInputSet(const std::string &meshTag, const Mesh &mesh, tga::RenderPass rp, const BindingSetDescription &bDesc) {
+        mtoTextures[meshTag][rp] = BindingSetInstance{bDesc}
+            .assign("albedo", mesh.albedoMap)
+            .assign("normal", mesh.normalMap)
+            .assign("metallic", mesh.metallicMap)
+            .assign("roughness", mesh.roughnessMap)
+            .assign("ao", mesh.aoMap).build(tgai, rp);
+    }
+} meshTable;
+
+class Demo {
+public:
+    Demo() = default; 
+    virtual ~Demo() {
+        for(auto &[staging, _0, _1] : uploads) {
+            static_cast<void>(_0); static_cast<void>(_1);
+            tgai.free(staging);
+        }
+        for(auto &[_0, buffers] : mtoTransformBuffers) {
+            static_cast<void>(_0);
+            for(auto buffer : buffers) {
+                tgai.free(buffer);
+            }
+        }
+        for(auto &[_0, instanceInputSets] : mtoTransforms) {
+            static_cast<void>(_0);
+            for(auto inputSets : instanceInputSets) {
+                for(auto [_1, inputSet] : inputSets) {
+                    static_cast<void>(_1);
+                    tgai.free(inputSet);
+                }
+            }
+        }
+    };
+    Demo(const Demo &other) = delete;
+    Demo &operator=(const Demo &other) = delete;
+
+    virtual void update(float dt) = 0;
+
+    std::unordered_map<std::string, std::vector<PerRP<tga::InputSet>>> mtoTransforms;
+    std::unordered_map<std::string, std::vector<tga::Buffer>> mtoTransformBuffers;
+    std::vector<std::tuple<tga::StagingBuffer, tga::Buffer, size_t>> uploads;
+    std::vector<std::pair<tga::RenderPass, BindingSetDescription>> registeredPasses;
+
+    void registerPass(tga::RenderPass rp, BindingSetDescription bDesc) {
+        registeredPasses.emplace_back(rp, std::move(bDesc));
+        for(auto &[meshTag, instanceInputSets] : mtoTransforms) {
+            const std::vector<tga::Buffer> &tbs = mtoTransformBuffers.at(meshTag);
+            for(size_t i = 0, end = instanceInputSets.size(); i < end; ++i) {
+                createInputSet(instanceInputSets[i], tbs[i], rp, registeredPasses.back().second);
+            }
+        }
+    }
+
+protected:
+    size_t addInstance(std::string name, const glm::mat4 &transform) {
+        meshTable.load(name);
+        size_t idx = uploads.size();
+        tga::StagingBuffer sb = tgai.createStagingBuffer({ sizeof(glm::mat4), reinterpret_cast<const uint8_t*>(glm::value_ptr(transform)) });
+        tga::Buffer tb = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), sb });
+        uploads.push_back({ sb, tb, sizeof(glm::mat4) });
+        mtoTransformBuffers[name].push_back(tb);
+        auto &inputSets = mtoTransforms[name];
+        inputSets.push_back(PerRP<tga::InputSet>{});
+        for(auto &[rp, bDesc] : registeredPasses) {
+            inputSets.back().emplace(rp, BindingSetInstance{bDesc}.assign("transform", tb).build(tgai, rp));
+        }
+        return idx;
+    }
+private:
+    void createInputSet(PerRP<tga::InputSet> &inputSets, tga::Buffer tb, tga::RenderPass rp, const BindingSetDescription &bDesc) {
+        inputSets.emplace(rp, BindingSetInstance{bDesc}.assign("transform", tb).build(tgai, rp));
+    }
+};
+
+std::vector<std::unique_ptr<Demo>> demos;
+Demo *currentDemo;
+
+class CitadelDemo : public Demo {
+public:
+    CitadelDemo() {
+        addInstance("window", glm::mat4(1.0f));
+        addInstance("plane", glm::mat4(100.0f));
+    }
+
+    void update(float dt) { static_cast<void>(dt); }
+};
 
 double getDeltaTime()
 {
@@ -106,6 +297,11 @@ void processInputs(const tga::Window& win, Scene& scene, double dt)
 
 }
 
+void setupDemos(tga::Interface &tgai) {
+    demos.emplace_back(std::make_unique<CitadelDemo>());
+    currentDemo = demos.back().get();
+}
+
 int main(int argc, const char *argv[])
 {
     struct Flags {
@@ -166,7 +362,7 @@ int main(int argc, const char *argv[])
     {
         std::uniform_real_distribution<float> posDist(-50, 50);
         // std::uniform_real_distribution<float> colorDist(0, 100);
-        scene.addPointLight(glm::vec3(posDist(rng), posDist(rng), posDist(rng)), glm::vec3(1.0f), glm::vec3(1.0f, 0.007f, 0.0002f));
+        scene.addPointLight(glm::vec3(posDist(rng), posDist(rng), posDist(rng)), glm::vec3(150.0f), glm::vec3(1.0f, 0.007f, 0.0002f));
     }
 
     // Update Camera Data at the beginning
@@ -205,13 +401,14 @@ int main(int argc, const char *argv[])
     //// TODO: use single buffer
     //tga::StagingBuffer windowStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(windowTransform))});
     //tga::Buffer windowTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), windowStagingBuffer, 0 });
-    Mesh planeMesh{tgai, "../assets/plane/plane.obj", vertexLayout};
+    
+    meshTable.load("plane");
     glm::mat4 planeTransform = glm::mat4(1.0);
     planeTransform = glm::scale(planeTransform, glm::vec3(100.0, 100.0, 100.0));
     tga::StagingBuffer planeStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(planeTransform))});
     tga::Buffer planeTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), planeStagingBuffer, 0 });
-    
-    Mesh pbrMesh{tgai, "../assets/gnome/gnome.obj", vertexLayout};
+
+    meshTable.load("brass");
     glm::mat4 pbrMeshTransform = glm::mat4(1.0);
     pbrMeshTransform = glm::scale(pbrMeshTransform, glm::vec3(20.0, 20.0, 20.0));
     tga::StagingBuffer pbrMeshStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(pbrMeshTransform))});
@@ -230,19 +427,13 @@ int main(int argc, const char *argv[])
         .setInputLayout(meshDescriptorLayout)
         .setVertexLayout(vertexLayout);
     auto rp = tgai.createRenderPass(rpInfo);
-    //Drawable windowDrawable{tgai, windowMesh};
-    //tga::InputSet windowInputSet = tgai.createInputSet({ rp, { tga::Binding(windowMesh.diffuseTexture, 0, 0), tga::Binding(windowMesh.specularTexture, 1, 0) }, 1 });
-    //tga::InputSet windowTransformInputSet = tgai.createInputSet({rp, { tga::Binding(windowTransformBuffer, 0, 0) }, 2});
-    //tga::InputSet windowTransformShadowInputSet = tgai.createInputSet({sp.renderPass(), { tga::Binding(windowTransformBuffer, 0, 0) }, 1});
-    Drawable planeDrawable{tgai, planeMesh};
-    tga::InputSet planeInputSet = planeMesh.getTextureInputSet(tgai, rp);
-    tga::InputSet planeTransformInputSet = tgai.createInputSet({rp, { tga::Binding(planeTransformBuffer, 0, 0) }, 2});
-    tga::InputSet planeTransformShadowInputSet = tgai.createInputSet({sp.renderPass(), { tga::Binding(planeTransformBuffer, 0, 0) }, 1});
 
-    Drawable pbrDrawable{tgai, pbrMesh};
-    tga::InputSet pbrTextureInputSet = pbrMesh.getTextureInputSet(tgai, rp);
-    tga::InputSet pbrMeshTransformInputSet = tgai.createInputSet({rp, { tga::Binding(pbrMeshTransformBuffer, 0, 0) }, 2});
-    tga::InputSet pbrMeshTransformShadowInputSet = tgai.createInputSet({sp.renderPass(), { tga::Binding(pbrMeshTransformBuffer, 0, 0) }, 1});
+    setupDemos(tgai);
+    meshTable.registerPass(rp, std::move(BindingSetDescription{1}.declare("albedo", 0, 0).declare("normal", 1, 0).declare("metallic", 2, 0).declare("roughness", 3, 0).declare("ao", 4, 0)));
+    for(auto &demo : demos) {
+        demo->registerPass(rp, std::move(BindingSetDescription{2}.declare("transform", 0, 0)));
+        demo->registerPass(sp.renderPass(), std::move(BindingSetDescription{1}.declare("transform", 0, 0)));
+    }
 
     // Load shader code from file
     auto skyVs = tga::loadShader("../shaders/sky_vert.spv", tga::ShaderType::vertex, tgai);
@@ -260,6 +451,22 @@ int main(int argc, const char *argv[])
     tga::InputSet globalInput = tgai.createInputSet({ rp, { tga::Binding(scene.buffer(), 0), tga::Binding(sp.inputBuffer(), 1), tga::Binding(sp.shadowMap(), 2), tga::Binding(fp.scatteringVolume(), 3), tga::Binding(fp.inputBuffer(), 4) } , 0 });
 
     std::vector<tga::CommandBuffer> cmdBuffers(tgai.backbufferCount(win));
+
+    auto renderMeshes = [](tga::CommandRecorder &recorder, tga::RenderPass rp) {
+        for(auto [meshName, transforms] : currentDemo->mtoTransforms) {
+            auto textureSets = meshTable.mtoTextures.at(meshName);
+            auto textureSetIt = textureSets.find(rp);
+            if(textureSetIt != textureSets.end()) {
+                recorder.bindInputSet(textureSetIt->second);
+            } // else no textures needed for this pass
+            Drawable &drawable = meshTable.mtoD.at(meshName);
+            for(auto &transform : transforms) {
+                recorder.bindInputSet(transform.at(rp));
+                drawable.draw(recorder);
+            }
+        }
+    };
+    
     auto rebuildCmdBuffers = [&]() {
         // Prepare the command buffers
         for(size_t i = 0; i < cmdBuffers.size(); ++i)
@@ -269,9 +476,9 @@ int main(int argc, const char *argv[])
             tga::CommandRecorder recorder = tga::CommandRecorder{ tgai, cmdBuffers[i] };
             // Scene Buffer is global and every mesh using the pipeline (we only have 1) uses the same buffer so loading it once per frame.
             scene.bufferUpload(recorder);
-            // recorder.bufferUpload(windowStagingBuffer, windowTransformBuffer, sizeof(glm::mat4));
-            // recorder.bufferUpload(planeStagingBuffer, planeTransformBuffer, sizeof(glm::mat4));
-            recorder.bufferUpload(pbrMeshStagingBuffer, pbrMeshTransformBuffer, sizeof(glm::mat4));
+            for(auto [staging, target, size] : currentDemo->uploads) {
+                recorder.bufferUpload(staging, target, size);
+            }
 
             sp.upload(recorder);
             fp.upload(recorder);
@@ -280,12 +487,7 @@ int main(int argc, const char *argv[])
 
             // Shadow pass
             sp.bind(recorder, i);
-            //recorder.bindInputSet(windowTransformShadowInputSet);
-            //windowDrawable.draw(recorder);
-            //recorder.bindInputSet(planeTransformShadowInputSet);
-            //planeDrawable.draw(recorder);
-            recorder.bindInputSet(pbrMeshTransformShadowInputSet);
-            pbrDrawable.draw(recorder);
+            renderMeshes(recorder, sp.renderPass());
 
             // Volume compute pass
             recorder.setRenderPass(tga::RenderPass{nullptr}, i);
@@ -296,15 +498,7 @@ int main(int argc, const char *argv[])
             // Forward pass
             recorder.setRenderPass(rp, i, {0.0, 0.0, 0.0, 1.0});
             recorder.bindInputSet(globalInput);
-            //recorder.bindInputSet(windowInputSet);
-            //recorder.bindInputSet(windowTransformInputSet);
-            //windowDrawable.draw(recorder);
-            recorder.bindInputSet(planeInputSet);
-            recorder.bindInputSet(planeTransformInputSet);
-            planeDrawable.draw(recorder);
-            recorder.bindInputSet(pbrTextureInputSet);
-            recorder.bindInputSet(pbrMeshTransformInputSet);
-            pbrDrawable.draw(recorder);
+            renderMeshes(recorder, rp);
 
             recorder.setRenderPass(skyRp, i);
             recorder.bindInputSet(skyInput);
