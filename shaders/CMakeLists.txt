@@ -1,8 +1,10 @@
 if(WIN32)
     add_definitions(-DNOMINMAX)
-    set(GLSLC glslc.exe) 
+    set(GLSL_COMPILER glslc.exe) 
+    set(GLSL_COMPILER_FLAGS -O)
 else()
-    set(GLSLC glslangValidator)
+    set(GLSL_COMPILER glslangValidator)
+    set(GLSL_COMPILER_FLAGS -gVS -V)
 endif(WIN32)
 
 # Compiles all shaders in /glsl folder to SPIR-V
@@ -17,7 +19,7 @@ foreach(GLSL ${GLSL_SHADERS})
     if(NOT ${FILE_TYPE} STREQUAL h)
         set(SPIRV "${FILE_NAME}_${FILE_TYPE}.spv")
         add_custom_command( OUTPUT ${SPIRV}
-                            COMMAND ${GLSLC} ${GLSL} -gVS -V -o ${SPIRV}
+                            COMMAND ${GLSL_COMPILER} ${GLSL} ${GLSL_COMPILER_FLAGS} -o ${SPIRV}
                             DEPENDS ${GLSL})
         list(APPEND SPIRV_SHADERS ${SPIRV})
     endif()
