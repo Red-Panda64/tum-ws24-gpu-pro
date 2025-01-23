@@ -19,6 +19,7 @@
 #include "Drawable.h"
 #include "ShadowPass.h"
 #include "FogVolumeGenerationPass.h"
+#include "util.h"
 
 #define INSTANCE_COUNT 2048
 #define PLACING_RADIUS 3000.0f
@@ -214,7 +215,9 @@ class CitadelDemo : public Demo {
 public:
     CitadelDemo() {
         addInstance("window", glm::mat4(1.0f));
-        addInstance("plane", glm::mat4(100.0f));
+        addInstance("plane", glm::scale(glm::mat4(1.0f), glm::vec3(100.0f)));
+        addInstance("gnome", makeTransform(glm::vec3(-6.0, 0.0, -10.0), glm::vec3(10.0, 10.0, 10.0), glm::vec3(0.0,  M_PI_2, 0.0)));
+        addInstance("gnome", makeTransform(glm::vec3( 6.0, 0.0, -10.0), glm::vec3(10.0, 10.0, 10.0), glm::vec3(0.0, -M_PI_2, 0.0)));
     }
 
     void update(float dt) { static_cast<void>(dt); }

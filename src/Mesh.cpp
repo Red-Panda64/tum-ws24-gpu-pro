@@ -22,7 +22,7 @@ tga::Texture loadTex(tga::Interface& tgai, const std::string& file, bool normalM
     {
         textureFormat = tga::Format::r8g8b8a8_unorm;
     }
-    tga::Texture texture = tgai.createTexture(tga::TextureInfo{ (uint32_t)w, (uint32_t)h, tga::Format::r8g8b8a8_srgb, tga::SamplerMode::linear, tga::AddressMode::repeat }.setSrcData(textureStagingBuffer));
+    tga::Texture texture = tgai.createTexture(tga::TextureInfo{ (uint32_t)w, (uint32_t)h, textureFormat, tga::SamplerMode::linear, tga::AddressMode::repeat }.setSrcData(textureStagingBuffer));
     free(p);
     tgai.free(textureStagingBuffer);
     return texture;
