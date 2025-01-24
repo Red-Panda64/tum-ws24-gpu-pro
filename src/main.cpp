@@ -34,11 +34,11 @@ class BindingSetInstance;
 class BindingSetDescription {
 private:
     friend class BindingSetInstance;
-    size_t set;
+    uint32_t set;
     std::vector<tga::Binding> fixedBindings;
     std::unordered_map<std::string, std::pair<size_t, size_t>> namedBindings;
 public:
-    BindingSetDescription(size_t set) : set{set} {}
+    BindingSetDescription(uint32_t set) : set{set} {}
 
     BindingSetDescription &fix(tga::Binding binding) {
         fixedBindings.push_back(binding);
@@ -299,7 +299,7 @@ void processInputs(const tga::Window& win, Scene& scene, double dt)
 
 }
 
-void setupDemos(tga::Interface &tgai) {
+void setupDemos() {
     demos.emplace_back(std::make_unique<CitadelDemo>());
     currentDemo = demos.back().get();
 }
@@ -405,16 +405,7 @@ int main(int argc, const char *argv[])
     //tga::Buffer windowTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), windowStagingBuffer, 0 });
     
     meshTable.load("plane");
-    glm::mat4 planeTransform = glm::mat4(1.0);
-    planeTransform = glm::scale(planeTransform, glm::vec3(100.0, 100.0, 100.0));
-    tga::StagingBuffer planeStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(planeTransform))});
-    tga::Buffer planeTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), planeStagingBuffer, 0 });
-
     meshTable.load("brass");
-    glm::mat4 pbrMeshTransform = glm::mat4(1.0);
-    pbrMeshTransform = glm::scale(pbrMeshTransform, glm::vec3(20.0, 20.0, 20.0));
-    tga::StagingBuffer pbrMeshStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(pbrMeshTransform))});
-    tga::Buffer pbrMeshTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), pbrMeshStagingBuffer, 0 });
 
     constexpr uint32_t SHADOW_MAP_RESX = 4096;
     constexpr uint32_t SHADOW_MAP_RESY = 4096;
@@ -430,7 +421,7 @@ int main(int argc, const char *argv[])
         .setVertexLayout(vertexLayout);
     auto rp = tgai.createRenderPass(rpInfo);
 
-    setupDemos(tgai);
+    setupDemos();
     meshTable.registerPass(rp, std::move(BindingSetDescription{1}.declare("albedo", 0, 0).declare("normal", 1, 0).declare("metallic", 2, 0).declare("roughness", 3, 0).declare("ao", 4, 0)));
     for(auto &demo : demos) {
         demo->registerPass(rp, std::move(BindingSetDescription{2}.declare("transform", 0, 0)));
