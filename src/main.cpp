@@ -23,7 +23,6 @@
 
 #define INSTANCE_COUNT 2048
 #define PLACING_RADIUS 3000.0f
-#define M_PI 3.14159265358979323846
 
 tga::Interface tgai;
 glm::uvec2 viewport;
@@ -279,7 +278,7 @@ void processInputs(const tga::Window& win, Scene& scene, double dt)
 
     if(tgai.keyDown(win, tga::Key::Enter))
     {
-        historyFactor = 1.0f;
+        historyFactor = 0.0f;
     }
 
     // Camera Rotation
@@ -356,16 +355,16 @@ int main(int argc, const char *argv[])
     // Scene
     Scene scene(tgai);
     // Setup the camera
-    scene.initCamera(glm::vec3(0.0f, 10.0f, 10.0f), 0.0f, 0.0f, glm::radians(180.0f));
+    scene.initCamera(glm::vec3(0.0f, 10.0f, 10.0f), 0.0f, 0.0f, 0.0f);
     scene.setAmbientFactor(0.03f);
     // Directional light
-    scene.setDirLight(glm::normalize(glm::vec3(10.0f, -10.0f, -1.0f)), glm::vec3(1.0f));
+    scene.setDirLight(glm::normalize(glm::vec3(1.0f, -1.0f, -1.0f)), glm::vec3(1.0f));
     static std::mt19937 rng(std::random_device{}());
     for(int i = 0; i < MAX_NR_OF_POINT_LIGHTS; ++i)
     {
         std::uniform_real_distribution<float> posDist(-50, 50);
         // std::uniform_real_distribution<float> colorDist(0, 100);
-        scene.addPointLight(glm::vec3(posDist(rng), posDist(rng), posDist(rng)), glm::vec3(150.0f), glm::vec3(1.0f, 0.007f, 0.0002f));
+        scene.addPointLight(glm::vec3(posDist(rng), posDist(rng), posDist(rng)), glm::vec3(1.0f), glm::vec3(1.0f, 0.007f, 0.0002f));
     }
 
     // Update Camera Data at the beginning
@@ -551,6 +550,7 @@ int main(int argc, const char *argv[])
         sstream << "[FPS]: " << fps << " (Smoothed: " << smoothedFps << ")";
         tgai.setWindowTitle(win, sstream.str());//std::format("[FPS]: {} (Smoothed: {})", fps, smoothedFps));
         processInputs(win, scene, dt);
+        currentDemo->update(dt);
         sp.update(scene, 0.001f, 0.04f);
         fp.update(scene, frameNumber++, historyFactor);
         auto nf = tgai.nextFrame(win);
