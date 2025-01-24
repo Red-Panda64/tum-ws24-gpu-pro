@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include "util.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_access.hpp>
@@ -89,15 +90,15 @@ void Camera::rotateWithMouseInput(double xPos, double yPos)
     //GLFW returns mouse coordinates relative to top-left corner of the screen
     //X increases in right direction
     //Y increases in bottom direction
-    double yOffset = lastY - yPos; //We need to subtract in reverse order since y coordinates ranges in reverse order we want 
+    double yOffset = yPos - lastY;
     lastX = xPos;
     lastY = yPos;
 
     xOffset *= 0.001;
     yOffset *= 0.001;
     
-    yaw = yaw - xOffset;
-    pitch += yOffset;
+    yaw -= xOffset;
+    pitch -= yOffset;
 }
 
 void Camera::rotateX(float angle)
@@ -128,13 +129,7 @@ glm::mat4 Camera::translation() const
 
 glm::mat4 Camera::rotation() const
 {
-    glm::quat orientation = glm::quat(0.0, 0.0, 0.0, 1.0);
-
-    orientation = orientation * glm::normalize(glm::angleAxis(pitch, glm::vec3(1.0, 0.0, 0.0)));
-    orientation = orientation * glm::normalize(glm::angleAxis(yaw, glm::vec3(0.0, 1.0, 0.0)));
-    orientation = orientation * glm::normalize(glm::angleAxis(roll, glm::vec3(0.0, 0.0, -1.0)));
-
-    return glm::toMat4(orientation);
+    return glm::transpose(rotationFromEuler(glm::vec3(pitch, yaw, roll)));
 }
 
 glm::mat4 Camera::view() const
