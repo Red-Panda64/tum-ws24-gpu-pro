@@ -41,6 +41,7 @@ private:
     std::array<uint32_t, 3> resolution;
     std::array<tga::Texture, 2> lightingVolumes;
     tga::Texture m_scatteringVolume;
+    tga::Texture perlinNoise;
     tga::StagingBuffer generationInputsStaging;
     VolumeGenerationInputs *generationInputsData;
     tga::Buffer generationInputsBuffer;

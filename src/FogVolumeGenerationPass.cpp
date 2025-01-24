@@ -1,4 +1,5 @@
 #include <cstring>
+#include <cmath>
 
 #include "FogVolumeGenerationPass.h"
 #include "util.h"
@@ -23,11 +24,13 @@ FogVolumeGenerationPass::FogVolumeGenerationPass(tga::Interface &tgai, std::arra
     generationInputsBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(VolumeGenerationInputs), generationInputsStaging });
 
     auto volumeGenerationShader = tga::loadShader("../shaders/volumetric_fog_comp.spv", tga::ShaderType::compute, tgai);
-    cp = tgai.createComputePass({ volumeGenerationShader, tga::InputLayout{ { tga::BindingType::storageImage, tga::BindingType::sampler, tga::BindingType::uniformBuffer, tga::BindingType::uniformBuffer, tga::BindingType::sampler } } });
+    cp = tgai.createComputePass({ volumeGenerationShader, tga::InputLayout{ { tga::BindingType::storageImage, tga::BindingType::sampler, tga::BindingType::uniformBuffer, tga::BindingType::uniformBuffer, tga::BindingType::sampler, tga::BindingType::sampler } } });
     tgai.free(volumeGenerationShader);
 
-    generationInputs[0] = tgai.createInputSet({ cp, { tga::Binding(lightingVolumes[0], 0), tga::Binding(lightingVolumes[1], 1), tga::Binding(generationInputsBuffer, 2), tga::Binding(sp.inputBuffer(), 3), tga::Binding(sp.shadowMap(), 4) }, 0 });
-    generationInputs[1] = tgai.createInputSet({ cp, { tga::Binding(lightingVolumes[1], 0), tga::Binding(lightingVolumes[0], 1), tga::Binding(generationInputsBuffer, 2), tga::Binding(sp.inputBuffer(), 3), tga::Binding(sp.shadowMap(), 4) }, 0 });
+    perlinNoise = tga::loadTexture("../assets/textures/perlin.png", tga::Format::r32_sfloat, tga::SamplerMode::linear, tga::AddressMode::repeat, tgai, false);
+
+    generationInputs[0] = tgai.createInputSet({ cp, { tga::Binding(lightingVolumes[0], 0), tga::Binding(lightingVolumes[1], 1), tga::Binding(generationInputsBuffer, 2), tga::Binding(sp.inputBuffer(), 3), tga::Binding(sp.shadowMap(), 4), tga::Binding(perlinNoise, 5) }, 0 });
+    generationInputs[1] = tgai.createInputSet({ cp, { tga::Binding(lightingVolumes[1], 0), tga::Binding(lightingVolumes[0], 1), tga::Binding(generationInputsBuffer, 2), tga::Binding(sp.inputBuffer(), 3), tga::Binding(sp.shadowMap(), 4), tga::Binding(perlinNoise, 5) }, 0 });
 
     auto volumeAccumulationShader = tga::loadShader("../shaders/volumetric_fog_raymarch_comp.spv", tga::ShaderType::compute, tgai);
     accCp = tgai.createComputePass({ volumeAccumulationShader, tga::InputLayout{ { tga::BindingType::storageImage, tga::BindingType::storageImage, tga::BindingType::uniformBuffer } } });
@@ -53,7 +56,7 @@ FogVolumeGenerationPass::~FogVolumeGenerationPass()
 
 void FogVolumeGenerationPass::update(const Scene &scene, uint32_t nf, float historyFactor)
 {
-    float time = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(startTime - std::chrono::system_clock::now()).count();
+    float time = std::fmod(std::chrono::duration_cast<std::chrono::duration<float>>(startTime - std::chrono::system_clock::now()).count() / 60.0f, 1.0f);
 
     const Camera &camera = scene.camera();
     generationInputsData->cameraPos = camera.getPosition();

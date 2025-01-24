@@ -58,15 +58,47 @@ layout(set = 0, binding = 3) uniform DirShadower
 };
 
 layout(set = 0, binding = 4) uniform sampler2D shadowMap;
+layout(set = 0, binding = 5) uniform sampler2D perlinNoise;
 
 #include "shadow_map.h"
 #include "volumetric_fog_util.h"
 
+float noise3D(vec3 p)
+{
+    return texture(perlinNoise, vec2(p.x, texture(perlinNoise, p.yz))).r;
+}
+
+float perlinNoise3D(vec3 p)
+{
+    float x = 0.0;
+    for (float i = 0.0; i < 6.0; i += 1.0)
+        x += noise3D(p * pow(4.0, i)) * pow(0.5, i);
+    return x;
+}
+
+float fbm(vec3 p)
+{
+    int numOctaves = 4;
+    float lacunarity = 1.0f;
+    float weight = 1.0;
+    float ret = 0.0;
+    float frequency = 1.0f;
+    // fbm
+    for (int i = 0; i < numOctaves; i++)
+    {
+        ret += weight * noise3D(frequency * p);
+        p *= 2.0;
+        weight *= 0.5;
+        frequency *= lacunarity;
+    }
+    return clamp(ret, 0.0, 1.0);
+}
+
 float calculateDensityFunction(vec3 worldSpacePos)
 {
-    // some procedural effect
-    // return turbulence(worldSpacePos * 0.35f + vec3(time * 0.1f, 0, 0), 2) * exp(-worldSpacePos.y * 0.5f);
-    return clamp(exp(-worldSpacePos.y * 0.01), 0.0, 1.0) * 1.5;
+    float noise = fbm(worldSpacePos * 0.0025 + vec3(time, 0.0, 0.0)).r;
+    noise = clamp(noise * 1.5f - 0.5f, 0.0, 1.0);
+    return noise * clamp(exp(-worldSpacePos.y * 0.2), 0.0, 1.0);
 }
 
 // some generated Poisson-like distribution
