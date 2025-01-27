@@ -65,7 +65,7 @@ tga::RenderPass ShadowPass::renderPass() const
     return rp;
 }
 
-void ShadowPass::update(const ::Scene &scene, float shadowNearDistance, float shadowFarDistance)
+void ShadowPass::update(const ::Scene &scene, float shadowDistance)
 {
     const glm::mat4 &vp = scene.viewProjection();
     glm::mat4 invVp = glm::inverse(vp);
@@ -106,12 +106,16 @@ void ShadowPass::update(const ::Scene &scene, float shadowNearDistance, float sh
     for(size_t i = 0; i < 8; i++) {
         frustumVerts[i] = dehomogenize(invVp * glm::vec4(frustumVerts[i], 1.0));
     }
-
+    //NOTE: SHADOW NEAR DISTANCE MESSES WITH FOG!!!! GET RID OF IT!!!!
+    //REDUCE FAR DISTANCE TO IMPROVE DEPTH RESOLUTION!!!
+    float zNear = scene.camera().zNear();
+    float zFar = scene.camera().zFar();
+    float mixFactor = glm::clamp((shadowDistance - zNear) / (zFar - zNear), 0.0f, 1.0f);
     for(size_t i = 0; i < 4; i++) {
         glm::vec3 near = frustumVerts[i];
         glm::vec3 far = frustumVerts[i + 4];
-        frustumVerts[i] = glm::mix(near, far, shadowNearDistance);
-        frustumVerts[i + 4] = glm::mix(near, far, shadowFarDistance);
+        frustumVerts[i] = near;
+        frustumVerts[i + 4] = glm::mix(near, far, mixFactor);
     }
 
     for(size_t i = 0; i < 8; i++) {
@@ -122,8 +126,14 @@ void ShadowPass::update(const ::Scene &scene, float shadowNearDistance, float sh
         }
     }
 
-    // extend towards lightsource
-    axisExtents[2][0] -= 200.0f;
+    // enlarge all axes slightly
+    axisExtents[0][0] -= 10.0f;
+    axisExtents[0][1] += 10.0f;
+    axisExtents[1][0] -= 10.0f;
+    axisExtents[1][1] += 10.0f;
+    // extend more towards lightsource
+    axisExtents[2][0] -= 100.0f;
+    axisExtents[2][1] += 10.0f;
 
     glm::mat4 perspective = glm::mat4(0.0f);
     perspective[0][0] = 2.0f / (axisExtents[0][1] - axisExtents[0][0]);

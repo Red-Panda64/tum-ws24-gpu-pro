@@ -15,7 +15,7 @@ public:
     tga::Buffer inputBuffer() const;
     tga::RenderPass renderPass() const;
     /* near and far distance ar given as fractions of the view distance */
-    void update(const ::Scene &scene, float shadowNearDistance, float shadowFarDistance);
+    void update(const ::Scene &scene, float shadowDistance);
 private:
     struct Scene {
         glm::mat4 viewProjection;

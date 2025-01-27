@@ -213,10 +213,10 @@ Demo *currentDemo;
 class CitadelDemo : public Demo {
 public:
     CitadelDemo() {
-        addInstance("window", glm::mat4(1.0f));
+        addInstance("church", makeTransform(glm::vec3(0.0, 0.1, 0.0), glm::vec3(1.0, 1.0, 1.0)));
         addInstance("plane", glm::scale(glm::mat4(1.0f), glm::vec3(100.0f)));
-        addInstance("gnome", makeTransform(glm::vec3(-6.0, 0.0, -10.0), glm::vec3(10.0, 10.0, 10.0), glm::vec3(0.0,  M_PI_2, 0.0)));
-        addInstance("gnome", makeTransform(glm::vec3( 6.0, 0.0, -10.0), glm::vec3(10.0, 10.0, 10.0), glm::vec3(0.0, -M_PI_2, 0.0)));
+        addInstance("gnome", makeTransform(glm::vec3(-10.0, 0.0,  3.0), glm::vec3(3.0), glm::vec3(0.0, M_PI_2, 0.0)));
+        addInstance("gnome", makeTransform(glm::vec3(-10.0, 0.0, -3.0), glm::vec3(3.0), glm::vec3(0.0, M_PI_2, 0.0)));
     }
 
     void update(float dt) { static_cast<void>(dt); }
@@ -356,16 +356,16 @@ int main(int argc, const char *argv[])
     Scene scene(tgai);
     // Setup the camera
     scene.initCamera(glm::vec3(0.0f, 10.0f, 10.0f), 0.0f, 0.0f, 0.0f);
-    scene.setAmbientFactor(0.03f);
+    scene.setAmbientFactor(0.015f);
     // Directional light
-    scene.setDirLight(glm::normalize(glm::vec3(1.0f, -1.0f, -1.0f)), glm::vec3(1.0f));
+    scene.setDirLight(glm::normalize(glm::vec3(1.0f, -0.5f, -0.2f)), glm::vec3(0.85f, 0.6f, 0.0f));
     static std::mt19937 rng(std::random_device{}());
-    for(int i = 0; i < MAX_NR_OF_POINT_LIGHTS; ++i)
-    {
-        std::uniform_real_distribution<float> posDist(-50, 50);
-        // std::uniform_real_distribution<float> colorDist(0, 100);
-        scene.addPointLight(glm::vec3(posDist(rng), posDist(rng), posDist(rng)), glm::vec3(1.0f), glm::vec3(1.0f, 0.007f, 0.0002f));
-    }
+    //for(int i = 0; i < MAX_NR_OF_POINT_LIGHTS; ++i)
+    //{
+    //    std::uniform_real_distribution<float> posDist(-50, 50);
+    //    // std::uniform_real_distribution<float> colorDist(0, 100);
+    //    scene.addPointLight(glm::vec3(posDist(rng), posDist(rng), posDist(rng)), glm::vec3(1.0f), glm::vec3(1.0f, 0.007f, 0.0002f));
+    //}
 
     // Update Camera Data at the beginning
     scene.updateSceneBufferCameraData(viewport);
@@ -403,9 +403,6 @@ int main(int argc, const char *argv[])
     //// TODO: use single buffer
     //tga::StagingBuffer windowStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(windowTransform))});
     //tga::Buffer windowTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), windowStagingBuffer, 0 });
-    
-    meshTable.load("plane");
-    meshTable.load("brass");
 
     constexpr uint32_t SHADOW_MAP_RESX = 4096;
     constexpr uint32_t SHADOW_MAP_RESY = 4096;
@@ -487,11 +484,14 @@ int main(int argc, const char *argv[])
             recorder.barrier(tga::PipelineStage::ColorAttachmentOutput, tga::PipelineStage::ComputeShader);
             fp.execute(recorder, i);
             recorder.barrier(tga::PipelineStage::ComputeShader, tga::PipelineStage::FragmentShader);
+            recorder.barrier(tga::PipelineStage::ColorAttachmentOutput, tga::PipelineStage::FragmentShader);
 
             // Forward pass
             recorder.setRenderPass(rp, i, {0.0, 0.0, 0.0, 1.0});
             recorder.bindInputSet(globalInput);
             renderMeshes(recorder, rp);
+
+            //recorder.barrier(tga::PipelineStage::ColorAttachmentOutput, tga::PipelineStage::EarlyFragmentTests);
 
             recorder.setRenderPass(skyRp, i);
             recorder.bindInputSet(skyInput);
@@ -542,7 +542,7 @@ int main(int argc, const char *argv[])
         tgai.setWindowTitle(win, sstream.str());//std::format("[FPS]: {} (Smoothed: {})", fps, smoothedFps));
         processInputs(win, scene, dt);
         currentDemo->update(dt);
-        sp.update(scene, 0.001f, 0.04f);
+        sp.update(scene, 500.0f);
         fp.update(scene, frameNumber++, historyFactor);
         auto nf = tgai.nextFrame(win);
         auto& cmd = cmdBuffers[nf];
