@@ -9,6 +9,7 @@
 #include <sstream>
 #include <algorithm>
 
+#include "imgui.h"
 
 #include "glm/gtc/type_ptr.hpp"
 #include "tga/tga.hpp"
@@ -350,7 +351,8 @@ int main(int argc, const char *argv[])
 
     // Window with the resolution of your screen
     auto [wWidth, wHeight] = tgai.screenResolution();
-    auto win = tgai.createWindow({ wWidth, wHeight, tga::PresentMode::vsync });
+    auto win = tgai.createWindow({ wWidth, wHeight, tga::PresentMode::immediate });
+    tgai.initGUI(win);
     viewport = glm::uvec2(wWidth, wHeight);
     // Scene
     Scene scene(tgai);
@@ -456,6 +458,9 @@ int main(int argc, const char *argv[])
             }
         }
     };
+
+    glm::vec3 direction;
+    glm::vec3 color;
     
     auto rebuildCmdBuffers = [&]() {
         // Prepare the command buffers
@@ -496,6 +501,18 @@ int main(int argc, const char *argv[])
             recorder.setRenderPass(skyRp, i);
             recorder.bindInputSet(skyInput);
             recorder.draw(6, 0);
+
+            recorder.guiPass(win, [&color, &direction](){
+                ImGui::ShowDemoWindow(0);
+                ImGui::Begin("GUI Example");
+
+                ImGui::Text("Directional Light");
+                ImGui::SliderFloat3("Direction: " , glm::value_ptr(direction), -1.0f, 1.0f);
+                ImGui::SliderFloat3("Color: ", glm::value_ptr(color), 0.0f, 1.0f);
+        
+                ImGui::End();
+
+            });
 
             cmdBuffers[i] = recorder.endRecording();
         }
@@ -541,6 +558,7 @@ int main(int argc, const char *argv[])
         sstream << "[FPS]: " << fps << " (Smoothed: " << smoothedFps << ")";
         tgai.setWindowTitle(win, sstream.str());//std::format("[FPS]: {} (Smoothed: {})", fps, smoothedFps));
         processInputs(win, scene, dt);
+        scene.setDirLight(direction, color);
         currentDemo->update(dt);
         sp.update(scene, 200.0f);
         fp.update(scene, frameNumber++, historyFactor);
