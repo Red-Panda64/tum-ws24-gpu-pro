@@ -22,7 +22,7 @@
     SOFTWARE.
 */
 
-#define FOG_RANGE 500.0 // TODO: Make it parameterizable? If we add ImGui
+#define FOG_RANGE 300.0 // TODO: Make it parameterizable? If we add ImGui
 #define DEPTH_PACK_EXPONENT 1.8
 #define VOLUME_WIDTH  512.0
 #define VOLUME_HEIGHT 256.0

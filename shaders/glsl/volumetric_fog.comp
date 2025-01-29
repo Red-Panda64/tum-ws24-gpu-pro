@@ -98,7 +98,7 @@ float calculateDensityFunction(vec3 worldSpacePos)
 {
     float noise = fbm(worldSpacePos * 0.0025 + vec3(time, 0.0, 0.0)).r;
     noise = clamp(noise * 1.5f - 0.5f, 0.0, 1.0);
-    return noise * clamp(exp(-worldSpacePos.y * 0.2), 0.0, 1.0);
+    return noise * clamp(exp(-worldSpacePos.y * 0.1), 0.0, 1.0);
 }
 
 // some generated Poisson-like distribution
@@ -117,9 +117,14 @@ const vec2 POISSON_SAMPLES[SAMPLE_NUM] =
 
 vec3 getSunLightingRadiance(vec3 worldPosition, vec3 viewDir, float anisotropy)
 {
-    float shadow = getShadowValue(lightPV, shadowMap, vec4(worldPosition, 1.0f), 0.001f);
+    float shadow = getShadowValue(lightPV, shadowMap, vec4(worldPosition, 1.0f), -0.0005f);
     float sunPhaseFunction = getPhaseFunction(dot(dirLight.direction, viewDir), anisotropy);
     return shadow * dirLight.color * sunPhaseFunction;
+}
+
+float shadow(vec3 worldPosition, vec3 viewDir, float anisotropy)
+{
+    return getShadowValue(lightPV, shadowMap, vec4(worldPosition, 1.0f), 0.001f);
 }
 
 vec3 getAmbient(vec3 worldPosition, vec3 viewDir, float anisotropy)
@@ -149,7 +154,6 @@ void main()
     }
     // bool reprojectionOn = g_VolumetricFogReprojectionOn > 0.5f;
     bool reprojectionOn = historyFactor > 0.0f;
-    
     vec2 currFrameJitter = reprojectionOn ? (POISSON_SAMPLES[(frameNumber + gl_GlobalInvocationID.x + gl_GlobalInvocationID.y * 2) % SAMPLE_NUM] - 0.5f) : vec2(0.0f);
 
     vec3 screenCoords = ndcFromThreadID(max(vec3(gl_GlobalInvocationID) + vec3(currFrameJitter, 0.0f), 0.0f), resolution);
@@ -162,9 +166,9 @@ void main()
 
     float dustDensity = calculateDensityFunction(worldSpacePos); //InputTexture[gl_GlobalInvocationID].x;
     // float scattering = g_VolumetricFogFinalScattering * (0.1f + dustDensity) * layerThickness;
-    float scattering = (0.1f + dustDensity) * layerThickness;
-    float absorption = 0.1f * layerThickness;
-    float anisotropy = -0.3;
+    float scattering = (0.02f + dustDensity) * layerThickness;
+    float absorption = 0.3f * layerThickness;
+    float anisotropy = -0.4;
     vec3 fogAlbedo = vec3(0.8f, 0.8f, 0.7f);
     vec3 viewDir = normalize(worldSpacePos - cameraPos.xyz);
 

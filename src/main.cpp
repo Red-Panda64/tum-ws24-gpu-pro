@@ -213,7 +213,7 @@ Demo *currentDemo;
 class CitadelDemo : public Demo {
 public:
     CitadelDemo() {
-        addInstance("church", makeTransform(glm::vec3(0.0, 0.1, 0.0), glm::vec3(1.0, 1.0, 1.0)));
+        addInstance("church", makeTransform(glm::vec3(0.0, 0.1, 0.0), glm::vec3(3.0, 3.0, 3.0)));
         addInstance("plane", glm::scale(glm::mat4(1.0f), glm::vec3(100.0f)));
         addInstance("gnome", makeTransform(glm::vec3(-10.0, 0.0,  3.0), glm::vec3(3.0), glm::vec3(0.0, M_PI_2, 0.0)));
         addInstance("gnome", makeTransform(glm::vec3(-10.0, 0.0, -3.0), glm::vec3(3.0), glm::vec3(0.0, M_PI_2, 0.0)));
@@ -356,7 +356,7 @@ int main(int argc, const char *argv[])
     Scene scene(tgai);
     // Setup the camera
     scene.initCamera(glm::vec3(0.0f, 10.0f, 10.0f), 0.0f, 0.0f, 0.0f);
-    scene.setAmbientFactor(0.015f);
+    scene.setAmbientFactor(0.1f);
     // Directional light
     scene.setDirLight(glm::normalize(glm::vec3(1.0f, -0.5f, -0.2f)), glm::vec3(0.85f, 0.6f, 0.0f));
     static std::mt19937 rng(std::random_device{}());
@@ -542,7 +542,7 @@ int main(int argc, const char *argv[])
         tgai.setWindowTitle(win, sstream.str());//std::format("[FPS]: {} (Smoothed: {})", fps, smoothedFps));
         processInputs(win, scene, dt);
         currentDemo->update(dt);
-        sp.update(scene, 500.0f);
+        sp.update(scene, 200.0f);
         fp.update(scene, frameNumber++, historyFactor);
         auto nf = tgai.nextFrame(win);
         auto& cmd = cmdBuffers[nf];
