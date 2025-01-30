@@ -101,19 +101,43 @@ float calculateDensityFunction(vec3 worldSpacePos)
     return noise * clamp(exp(-worldSpacePos.y * 0.1), 0.0, 1.0);
 }
 
-// some generated Poisson-like distribution
-const uint SAMPLE_NUM = 8;
-const vec2 POISSON_SAMPLES[SAMPLE_NUM] =
+const vec3 POISSON_SAMPLES[] =
 {
-    vec2(0.228132254148f, 0.67232428631f),
-    vec2(0.848556554824f, 0.135723477704f),
-    vec2(0.74820789575f, 0.63965073852f),
-    vec2(0.472544801767f, 0.351474129111f),
-    vec2(0.962881642535f, 0.387342871273f),
-    vec2(0.0875977149838f, 0.896250211998f),
-    vec2(0.203231652569f, 0.12436704431f),
-    vec2(0.56452806916f, 0.974024350484f),
+    vec3(0.7235649381936251, 0.3138471669743047, 0.3201859810948713),
+    vec3(0.9023263454488455, 0.1021536974445034, 0.7728286021842685),
+    vec3(0.707535577489901, 0.7793034184152576, 0.1783810674632729),
+    vec3(0.6448693804632389, 0.7572636913351743, 0.7008060842666394),
+    vec3(0.5283278004896363, 0.08963895760397314, 0.6416003295537631),
+    vec3(0.1945595074918383, 0.8768175519738776, 0.8383091365372217),
+    vec3(0.3962390299362931, 0.5889969185665176, 0.16038235099607745),
+    vec3(0.42665565633375147, 0.5199040470573899, 0.8392925000334579),
+    vec3(0.016575921662339232, 0.02782739808605425, 0.6579822665975691),
+    vec3(0.9053817004840065, 0.5071589150137468, 0.848557535237008),
+    vec3(0.9719270337852532, 0.7932234918934737, 0.46719431136597156),
+    vec3(0.18561505112152382, 0.08741559201323862, 0.24237215202068418),
+    vec3(0.3361849182100367, 0.758483593873007, 0.5263712323764304),
+    vec3(0.04827339058227498, 0.5292256549317347, 0.9465748311306693),
+    vec3(0.9645553232327962, 0.01671040541958768, 0.37611294123403893),
+    vec3(0.6720574315907052, 0.12000941884375096, 0.029772375614268987),
+    vec3(0.4910912042746283, 0.9904295677963227, 0.99393447098164),
+    vec3(0.021958886572755743, 0.4193473556770484, 0.36153393894970104),
 };
+const uint SAMPLE_NUM = POISSON_SAMPLES.length();
+
+// https://stackoverflow.com/questions/23319289/is-there-a-good-glsl-hash-function
+uint hash(uint x)
+{
+    x ^= x >> 16;
+    x *= 0x7feb352dU;
+    x ^= x >> 15;
+    x *= 0x846ca68bU;
+    x ^= x >> 16;
+    return x;
+}
+
+uint hash3(uvec3 cell) {
+    return hash(hash(hash(cell.x) ^ cell.y) ^ cell.z);
+}
 
 vec3 getSunLightingRadiance(vec3 worldPosition, vec3 viewDir, float anisotropy)
 {
@@ -154,9 +178,9 @@ void main()
     }
     // bool reprojectionOn = g_VolumetricFogReprojectionOn > 0.5f;
     bool reprojectionOn = historyFactor > 0.0f;
-    vec2 currFrameJitter = reprojectionOn ? (POISSON_SAMPLES[(frameNumber + gl_GlobalInvocationID.x + gl_GlobalInvocationID.y * 2) % SAMPLE_NUM] - 0.5f) : vec2(0.0f);
+    vec3 currFrameJitter = reprojectionOn ? (POISSON_SAMPLES[(hash(frameNumber ^ hash3(gl_GlobalInvocationID))) % SAMPLE_NUM] - 0.5f) : vec3(0.0f);
 
-    vec3 screenCoords = ndcFromThreadID(max(vec3(gl_GlobalInvocationID) + vec3(currFrameJitter, 0.0f), 0.0f), resolution);
+    vec3 screenCoords = ndcFromThreadID(max(vec3(gl_GlobalInvocationID) + currFrameJitter, 0.0f), resolution);
     float linearDepth = volumeZPosToDepth(screenCoords.z);
     float layerThickness = volumeZPosToDepth(screenCoords.z + 1.0f / float(resolution.z)) - linearDepth;
     // Our scene is at a much greater scale with much more fog range, hence the units are off
@@ -164,7 +188,7 @@ void main()
 
     vec3 worldSpacePos = worldPositionFromNdcCoords(screenCoords.xy, linearDepth);
 
-    float dustDensity = calculateDensityFunction(worldSpacePos); //InputTexture[gl_GlobalInvocationID].x;
+    float dustDensity = calculateDensityFunction(worldSpacePos);
     // float scattering = g_VolumetricFogFinalScattering * (0.1f + dustDensity) * layerThickness;
     float scattering = (0.02f + dustDensity) * layerThickness;
     float absorption = 0.3f * layerThickness;
@@ -184,7 +208,7 @@ void main()
     vec4 finalOutValue = vec4(lighting * scattering, scattering + absorption);
 
     if(reprojectionOn) {
-        vec3 ndcNoJitter = ndcFromThreadID(max(vec3(gl_GlobalInvocationID), 0.0f), resolution);
+        vec3 ndcNoJitter = ndcFromThreadID(vec3(gl_GlobalInvocationID), resolution);
         float linearDepthNoJitter = volumeZPosToDepth(ndcNoJitter.z);
         vec3 worldSpacePosNoJitter = worldPositionFromNdcCoords(ndcNoJitter.xy, linearDepthNoJitter);
         vec4 prevFrameProjected = prevFrameVP * vec4(worldSpacePosNoJitter, 1.0);
