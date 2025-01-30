@@ -19,9 +19,17 @@ layout(set = 0, binding = 2) uniform VolumeGenerationInputs
     vec3 cameraZAxis;
     float zNear;
     float zFar;
+    mat4 prevFrameVP;
     DirLight dirLight;
     float time;
     int frameNumber;
+    float historyFactor;
+    float density;
+    float constantDensity;
+    float anisotropy;
+    float absorptionFactor;
+    float height;
+    bool noise;
 };
 
 #include "volumetric_fog_util.h"

@@ -50,6 +50,12 @@ layout(set = 0, binding = 2) uniform VolumeGenerationInputs
     float time;
     int frameNumber;
     float historyFactor;
+    float density;
+    float constantDensity;
+    float anisotropy;
+    float absorptionFactor;
+    float height;
+    bool enableNoise;
 };
 
 layout(set = 0, binding = 3) uniform DirShadower
@@ -96,9 +102,14 @@ float fbm(vec3 p)
 
 float calculateDensityFunction(vec3 worldSpacePos)
 {
-    float noise = fbm(worldSpacePos * 0.0025 + vec3(time, 0.0, 0.0)).r;
-    noise = clamp(noise * 1.5f - 0.5f, 0.0, 1.0);
-    return noise * clamp(exp(-worldSpacePos.y * 0.1), 0.0, 1.0);
+    float heightFactor = clamp(exp(-worldSpacePos.y * height), 0.0, 1.0) * density;
+    if(enableNoise) {
+        float noise = fbm(worldSpacePos * 0.0025 + vec3(time, 0.0, 0.0)).r;
+        noise = clamp(noise * 1.5f - 0.5f, 0.0, 1.0);
+        return noise * heightFactor;
+    } else {
+        return heightFactor;
+    }
 }
 
 const vec3 POISSON_SAMPLES[] =
@@ -190,9 +201,8 @@ void main()
 
     float dustDensity = calculateDensityFunction(worldSpacePos);
     // float scattering = g_VolumetricFogFinalScattering * (0.1f + dustDensity) * layerThickness;
-    float scattering = (0.02f + dustDensity) * layerThickness;
-    float absorption = 0.3f * layerThickness;
-    float anisotropy = -0.4;
+    float scattering = (constantDensity + dustDensity) * layerThickness;
+    float absorption = absorptionFactor * layerThickness;
     vec3 fogAlbedo = vec3(0.8f, 0.8f, 0.7f);
     vec3 viewDir = normalize(worldSpacePos - cameraPos.xyz);
 

@@ -28,7 +28,6 @@
 tga::Interface tgai;
 glm::uvec2 viewport;
 int targetFPS = 144;
-float historyFactor = 0.85f;
 
 class BindingSetInstance;
 
@@ -277,11 +276,6 @@ void processInputs(const tga::Window& win, Scene& scene, double dt)
         cameraUpdated = true;
     }
 
-    if(tgai.keyDown(win, tga::Key::Enter))
-    {
-        historyFactor = 0.0f;
-    }
-
     // Camera Rotation
     auto [xPos, yPos] = tgai.mousePosition(win);
     if(tgai.keyDown(win, tga::Key::MouseRight))
@@ -310,6 +304,29 @@ int main(int argc, const char *argv[])
     struct Flags {
         unsigned int changeDir : 1;
     } flags = {};
+
+    struct Settings {
+        glm::vec3 lightDir;
+        glm::vec3 lightColor;
+        // Fog
+        float historyFactor;
+        float density;
+        float constantDensity;
+        float anisotropy;
+        float absorption;
+        float height;
+        bool noise;
+    } settings {
+        .lightDir = glm::vec3(1.0, -1.0, 0.0),
+        .lightColor = glm::vec3(0.7, 0.7, 0.7),
+        .historyFactor = 0.9,
+        .density = 0.5,
+        .constantDensity = 0.5,
+        .anisotropy = -0.3,
+        .absorption = 0.3,
+        .height = 0.1,
+        .noise = true,
+    };
 
     auto usage = [argc, argv]() {
         std::cerr << "Usage: " << (argc > 0 ? argv[0] : "./ex4") << " [-c] [<file>]\n";
@@ -458,9 +475,6 @@ int main(int argc, const char *argv[])
             }
         }
     };
-
-    glm::vec3 direction = glm::vec3(0.0, -1.0, 0.0);
-    glm::vec3 color = glm::vec3(0.7, 0.7, 0.7);
     
     auto rebuildCmdBuffers = [&]() {
         // Prepare the command buffers
@@ -546,23 +560,30 @@ int main(int argc, const char *argv[])
         sstream << "[FPS]: " << fps << " (Smoothed: " << smoothedFps << ")";
         tgai.setWindowTitle(win, sstream.str());//std::format("[FPS]: {} (Smoothed: {})", fps, smoothedFps));
         processInputs(win, scene, dt);
-        scene.setDirLight(direction, color);
+        scene.setDirLight(glm::normalize(settings.lightDir), settings.lightColor);
         currentDemo->update(dt);
         sp.update(scene, 200.0f);
-        fp.update(scene, frameNumber++, historyFactor);
+        fp.update(scene, frameNumber++, settings.historyFactor, settings.density, settings.constantDensity, settings.anisotropy, settings.absorption, settings.height, settings.noise);
         auto nf = tgai.nextFrame(win);
         auto& cmd = cmdBuffers[nf];
         tgai.execute(cmd);
 
         tga::CommandRecorder recorder = tga::CommandRecorder{ tgai };
-        recorder.guiPass(win, nf, [&color, &direction](){
-            ImGui::ShowDemoWindow(0);
-            ImGui::Begin("GUI Example");
-
+        recorder.guiPass(win, nf, [&settings](){
+            ImGui::Begin("Scene");
             ImGui::Text("Directional Light");
-            ImGui::SliderFloat3("Direction: " , glm::value_ptr(direction), -1.0f, 1.0f);
-            ImGui::SliderFloat3("Color: ", glm::value_ptr(color), 0.0f, 1.0f);
-    
+            ImGui::SliderFloat3("Direction: " , glm::value_ptr(settings.lightDir), -1.0f, 1.0f);
+            ImGui::SliderFloat3("Color: ", glm::value_ptr(settings.lightColor), 0.0f, 1.0f);
+
+            ImGui::Text("Volumetric Fog");
+            ImGui::SliderFloat("History Weight: ", &settings.historyFactor, 0.0f, 1.0f);
+            ImGui::SliderFloat("Density: ", &settings.density, 0.0f, 1.0f);
+            ImGui::SliderFloat("Constant Density: ", &settings.constantDensity, 0.0f, 1.0f);
+            ImGui::SliderFloat("Anisotropy: ", &settings.anisotropy, -0.9f, 0.9f);
+            ImGui::SliderFloat("Absorption: ", &settings.absorption, 0.0f, 1.0f);
+            ImGui::SliderFloat("Height: ", &settings.height, 0.0f, 1.0f);
+            ImGui::Checkbox("Noise: ", &settings.noise);
+
             ImGui::End();
         });
         tgai.execute(recorder.endRecording());
