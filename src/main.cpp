@@ -459,8 +459,8 @@ int main(int argc, const char *argv[])
         }
     };
 
-    glm::vec3 direction;
-    glm::vec3 color;
+    glm::vec3 direction = glm::vec3(0.0, -1.0, 0.0);
+    glm::vec3 color = glm::vec3(0.7, 0.7, 0.7);
     
     auto rebuildCmdBuffers = [&]() {
         // Prepare the command buffers
@@ -501,18 +501,6 @@ int main(int argc, const char *argv[])
             recorder.setRenderPass(skyRp, i);
             recorder.bindInputSet(skyInput);
             recorder.draw(6, 0);
-
-            recorder.guiPass(win, [&color, &direction](){
-                ImGui::ShowDemoWindow(0);
-                ImGui::Begin("GUI Example");
-
-                ImGui::Text("Directional Light");
-                ImGui::SliderFloat3("Direction: " , glm::value_ptr(direction), -1.0f, 1.0f);
-                ImGui::SliderFloat3("Color: ", glm::value_ptr(color), 0.0f, 1.0f);
-        
-                ImGui::End();
-
-            });
 
             cmdBuffers[i] = recorder.endRecording();
         }
@@ -565,6 +553,20 @@ int main(int argc, const char *argv[])
         auto nf = tgai.nextFrame(win);
         auto& cmd = cmdBuffers[nf];
         tgai.execute(cmd);
+
+        tga::CommandRecorder recorder = tga::CommandRecorder{ tgai };
+        recorder.guiPass(win, nf, [&color, &direction](){
+            ImGui::ShowDemoWindow(0);
+            ImGui::Begin("GUI Example");
+
+            ImGui::Text("Directional Light");
+            ImGui::SliderFloat3("Direction: " , glm::value_ptr(direction), -1.0f, 1.0f);
+            ImGui::SliderFloat3("Color: ", glm::value_ptr(color), 0.0f, 1.0f);
+    
+            ImGui::End();
+        });
+        tgai.execute(recorder.endRecording());
+
         tgai.present(win, nf);
         tgai.waitForCompletion(cmd);
     }
