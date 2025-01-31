@@ -222,6 +222,16 @@ public:
     void update(float dt) { static_cast<void>(dt); }
 };
 
+class GnomeDemo : public Demo {
+public:
+    GnomeDemo() {
+        addInstance("plane", glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
+        addInstance("gnome", makeTransform(glm::vec3(0.0, 0.0, 0.0), glm::vec3(15.0)));
+    }
+
+    void update(float dt) { static_cast<void>(dt); }
+};
+
 double getDeltaTime()
 {
     typedef std::chrono::high_resolution_clock clock;
@@ -297,6 +307,15 @@ void processInputs(const tga::Window& win, Scene& scene, double dt)
 void setupDemos() {
     demos.emplace_back(std::make_unique<CitadelDemo>());
     currentDemo = demos.back().get();
+    demos.emplace_back(std::make_unique<GnomeDemo>());
+}
+
+bool handleDemoChange(int idx) {
+    if (currentDemo != demos[idx].get()) {
+        currentDemo = demos[idx].get();
+        return true;
+    }
+    return false;
 }
 
 int main(int argc, const char *argv[])
@@ -306,6 +325,7 @@ int main(int argc, const char *argv[])
     } flags = {};
 
     struct Settings {
+        int demoIdx;
         glm::vec3 lightDir;
         glm::vec3 lightColor;
         // Fog
@@ -317,6 +337,7 @@ int main(int argc, const char *argv[])
         float height;
         bool noise;
     } settings {
+        .demoIdx = 0,
         .lightDir = glm::vec3(1.0, -1.0, 0.0),
         .lightColor = glm::vec3(0.7, 0.7, 0.7),
         .historyFactor = 0.9,
@@ -410,18 +431,6 @@ int main(int argc, const char *argv[])
     // Load shader code from file
     auto vs = tga::loadShader("../shaders/mesh_vert.spv", tga::ShaderType::vertex, tgai);
     auto fs = tga::loadShader("../shaders/mesh_frag.spv", tga::ShaderType::fragment, tgai);
-
-    //auto cs = tga::loadShader("../shaders/compute_transforms_comp.spv", tga::ShaderType::compute, tgai);
-    //tga::SetLayout computeSetLayout = tga::SetLayout{ {tga::BindingType::storageBuffer}, {tga::BindingType::storageBuffer}, {tga::BindingType::uniformBuffer} };
-    //tga::InputLayout computeInputLayout = tga::InputLayout({ computeSetLayout });
-    //auto cp = tgai.createComputePass({cs, computeInputLayout});
-
-    //Mesh windowMesh{tgai, "../assets/window.obj", vertexLayout};
-    //glm::mat4 windowTransform = glm::mat4(1.0);
-    //windowTransform = glm::scale(windowTransform, glm::vec3(5.0, 5.0, 5.0));
-    //// TODO: use single buffer
-    //tga::StagingBuffer windowStagingBuffer = tgai.createStagingBuffer({sizeof(glm::mat4), reinterpret_cast<uint8_t*>(glm::value_ptr(windowTransform))});
-    //tga::Buffer windowTransformBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(glm::mat4), windowStagingBuffer, 0 });
 
     constexpr uint32_t SHADOW_MAP_RESX = 4096;
     constexpr uint32_t SHADOW_MAP_RESY = 4096;
@@ -533,6 +542,10 @@ int main(int argc, const char *argv[])
     uint64_t frameNumber = 0;
     while (!tgai.windowShouldClose(win))
     {
+        if (handleDemoChange(settings.demoIdx)) {
+            rebuildCmdBuffers();
+        }
+
         // FPS LIMITING
         // Maintain designated frequency of 1 / targetFPS
         currentFrameStart = std::chrono::system_clock::now();
@@ -571,6 +584,9 @@ int main(int argc, const char *argv[])
         tga::CommandRecorder recorder = tga::CommandRecorder{ tgai };
         recorder.guiPass(win, nf, [&settings](){
             ImGui::Begin("Scene");
+            if(demos.size() > 1)
+                ImGui::SliderInt("Demo", &settings.demoIdx, 0, static_cast<int>(demos.size() - 1));
+
             ImGui::Text("Directional Light");
             ImGui::SliderFloat3("Direction: " , glm::value_ptr(settings.lightDir), -1.0f, 1.0f);
             ImGui::SliderFloat3("Color: ", glm::value_ptr(settings.lightColor), 0.0f, 1.0f);
