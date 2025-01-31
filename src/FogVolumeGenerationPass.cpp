@@ -54,7 +54,7 @@ FogVolumeGenerationPass::~FogVolumeGenerationPass()
     tgai->free(cp);
 }
 
-void FogVolumeGenerationPass::update(const Scene &scene, uint32_t nf, float historyFactor, float density, float constantDensity, float anisotropy, float absorption, float height, bool noise)
+void FogVolumeGenerationPass::update(const Scene &scene, uint32_t nf, float historyFactor, float density, float constantDensity, float anisotropy, float absorption, float height, bool noise, float skyBlendRatio)
 {
     float time = std::fmod(std::chrono::duration_cast<std::chrono::duration<float>>(startTime - std::chrono::system_clock::now()).count() / 60.0f, 1.0f);
 
@@ -88,6 +88,7 @@ void FogVolumeGenerationPass::update(const Scene &scene, uint32_t nf, float hist
     generationInputsData->absorptionFactor = absorption;
     generationInputsData->height = height;
     generationInputsData->noise = noise;
+    generationInputsData->skyBlendRatio = skyBlendRatio;
     prevFrameVP = vp;
 }
 

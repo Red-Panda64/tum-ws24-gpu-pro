@@ -196,7 +196,7 @@ void main()
 {
 	//Fundamental variables
 	vec3 albedo = pow(texture(albedoMap, vIn.uv).rgb, vec3(2.2f)); // Map albedo from sRGB to linear as we will do our light computation in linear space
-	float metallic = texture(metallicMap, vIn.uv).r;
+	float metallic = texture(metallicMap, vIn.uv).b;
 	float roughness = texture(roughnessMap, vIn.uv).r;
 	float ao = texture(aoMap, vIn.uv).r;
 

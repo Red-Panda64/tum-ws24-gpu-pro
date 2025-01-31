@@ -142,6 +142,24 @@ private:
     }
 } meshTable;
 
+struct Settings
+{
+    int demoIdx;
+    glm::vec3 lightDir;
+    glm::vec3 lightColor;
+    // Fog
+    float historyFactor;
+    float density;
+    float constantDensity;
+    float anisotropy;
+    float absorption;
+    float height;
+    bool noise;
+    float skyBlendRatio;
+};
+
+Settings settings;
+
 class Demo {
 public:
     Demo() = default; 
@@ -175,6 +193,7 @@ public:
     std::unordered_map<std::string, std::vector<tga::Buffer>> mtoTransformBuffers;
     std::vector<std::tuple<tga::StagingBuffer, tga::Buffer, size_t>> uploads;
     std::vector<std::pair<tga::RenderPass, BindingSetDescription>> registeredPasses;
+    Settings settings;
 
     void registerPass(tga::RenderPass rp, BindingSetDescription bDesc) {
         registeredPasses.emplace_back(rp, std::move(bDesc));
@@ -217,6 +236,19 @@ public:
         addInstance("plane", glm::scale(glm::mat4(1.0f), glm::vec3(100.0f)));
         addInstance("gnome", makeTransform(glm::vec3(-10.0, 0.0,  3.0), glm::vec3(3.0), glm::vec3(0.0, M_PI_2, 0.0)));
         addInstance("gnome", makeTransform(glm::vec3(-10.0, 0.0, -3.0), glm::vec3(3.0), glm::vec3(0.0, M_PI_2, 0.0)));
+        settings = Settings{
+        .demoIdx = 0,
+        .lightDir = glm::vec3(1.0, -1.0, 0.0),
+        .lightColor = glm::vec3(0.7, 0.7, 0.7),
+        .historyFactor = 0.9,
+        .density = 0.5,
+        .constantDensity = 0.5,
+        .anisotropy = -0.3,
+        .absorption = 0.3,
+        .height = 0.1,
+        .noise = true,
+        .skyBlendRatio = 0.1
+        };
     }
 
     void update(float dt) { static_cast<void>(dt); }
@@ -227,6 +259,44 @@ public:
     GnomeDemo() {
         addInstance("plane", glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
         addInstance("gnome", makeTransform(glm::vec3(0.0, 0.0, 0.0), glm::vec3(15.0)));
+        settings = Settings{
+        .demoIdx = 1,
+        .lightDir = glm::vec3(1.0, -1.0, 0.0),
+        .lightColor = glm::vec3(0.7, 0.7, 0.7),
+        .historyFactor = 0.9,
+        .density = 0.5,
+        .constantDensity = 0.5,
+        .anisotropy = -0.3,
+        .absorption = 0.3,
+        .height = 0.1,
+        .noise = true,
+        .skyBlendRatio = 0.1
+        };
+    }
+
+    void update(float dt) { static_cast<void>(dt); }
+};
+
+class SunnyDemo : public Demo
+{
+public:
+    SunnyDemo()
+    {
+        addInstance("coast_land", glm::scale(glm::mat4(1.0f), glm::vec3(100.0f, 30.0f, 100.0f)));
+        addInstance("rocks", glm::scale(glm::mat4(1.0f), glm::vec3(50.0, 50.0, 50.0f)));
+        settings = Settings{
+        .demoIdx = 2,
+        .lightDir = glm::vec3(1.0, -1.0, 0.0),
+        .lightColor = glm::vec3(1.0, 0.1, 0.0),
+        .historyFactor = 0.9,
+        .density = 1.0,
+        .constantDensity = 0.0,
+        .anisotropy = -0.3,
+        .absorption = 0.3,
+        .height = 0.1,
+        .noise = true,
+        .skyBlendRatio = 0.5
+        };
     }
 
     void update(float dt) { static_cast<void>(dt); }
@@ -307,12 +377,15 @@ void processInputs(const tga::Window& win, Scene& scene, double dt)
 void setupDemos() {
     demos.emplace_back(std::make_unique<CitadelDemo>());
     currentDemo = demos.back().get();
+    settings = currentDemo->settings;
     demos.emplace_back(std::make_unique<GnomeDemo>());
+    demos.emplace_back(std::make_unique<SunnyDemo>());
 }
 
 bool handleDemoChange(int idx) {
     if (currentDemo != demos[idx].get()) {
         currentDemo = demos[idx].get();
+        settings = currentDemo->settings;
         return true;
     }
     return false;
@@ -323,31 +396,6 @@ int main(int argc, const char *argv[])
     struct Flags {
         unsigned int changeDir : 1;
     } flags = {};
-
-    struct Settings {
-        int demoIdx;
-        glm::vec3 lightDir;
-        glm::vec3 lightColor;
-        // Fog
-        float historyFactor;
-        float density;
-        float constantDensity;
-        float anisotropy;
-        float absorption;
-        float height;
-        bool noise;
-    } settings {
-        .demoIdx = 0,
-        .lightDir = glm::vec3(1.0, -1.0, 0.0),
-        .lightColor = glm::vec3(0.7, 0.7, 0.7),
-        .historyFactor = 0.9,
-        .density = 0.5,
-        .constantDensity = 0.5,
-        .anisotropy = -0.3,
-        .absorption = 0.3,
-        .height = 0.1,
-        .noise = true,
-    };
 
     auto usage = [argc, argv]() {
         std::cerr << "Usage: " << (argc > 0 ? argv[0] : "./ex4") << " [-c] [<file>]\n";
@@ -576,13 +624,13 @@ int main(int argc, const char *argv[])
         scene.setDirLight(glm::normalize(settings.lightDir), settings.lightColor);
         currentDemo->update(dt);
         sp.update(scene, 200.0f);
-        fp.update(scene, frameNumber++, settings.historyFactor, settings.density, settings.constantDensity, settings.anisotropy, settings.absorption, settings.height, settings.noise);
+        fp.update(scene, frameNumber++, settings.historyFactor, settings.density, settings.constantDensity, settings.anisotropy, settings.absorption, settings.height, settings.noise, settings.skyBlendRatio);
         auto nf = tgai.nextFrame(win);
         auto& cmd = cmdBuffers[nf];
         tgai.execute(cmd);
 
         tga::CommandRecorder recorder = tga::CommandRecorder{ tgai };
-        recorder.guiPass(win, nf, [&settings](){
+        recorder.guiPass(win, nf, [](){
             ImGui::Begin("Scene");
             if(demos.size() > 1)
                 ImGui::SliderInt("Demo", &settings.demoIdx, 0, static_cast<int>(demos.size() - 1));
@@ -599,6 +647,8 @@ int main(int argc, const char *argv[])
             ImGui::SliderFloat("Absorption: ", &settings.absorption, 0.0f, 1.0f);
             ImGui::SliderFloat("Height: ", &settings.height, 0.0f, 1.0f);
             ImGui::Checkbox("Noise: ", &settings.noise);
+            ImGui::SliderFloat("Sky Blend Ratio: ", &settings.skyBlendRatio, 0.0f, 1.0f);
+
 
             ImGui::End();
         });

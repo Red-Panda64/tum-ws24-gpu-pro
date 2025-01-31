@@ -13,7 +13,7 @@ public:
     FogVolumeGenerationPass(const FogVolumeGenerationPass &) = delete;
     FogVolumeGenerationPass &operator=(const FogVolumeGenerationPass &) = delete;
 
-    void update(const Scene &scene, uint32_t nf, float historyFactor, float density, float constantDensity, float anisotropy, float absorption, float height, bool noise);
+    void update(const Scene &scene, uint32_t nf, float historyFactor, float density, float constantDensity, float anisotropy, float absorption, float height, bool noise, float skyBlendRatio);
     void upload(tga::CommandRecorder &recorder) const;
     void execute(tga::CommandRecorder &recorder, uint32_t nf) const;
     tga::Buffer inputBuffer() const;
@@ -38,6 +38,7 @@ private:
         alignas(4) float absorptionFactor;
         alignas(4) float height;
         alignas(4) bool noise;
+        alignas(4) float skyBlendRatio;
     };
 
     tga::Interface *tgai;

@@ -30,6 +30,7 @@ layout(set = 0, binding = 2) uniform VolumeGenerationInputs
     float absorptionFactor;
     float height;
     bool noise;
+    float skyBlendRatio;
 };
 
 #include "volumetric_fog_util.h"
@@ -50,5 +51,7 @@ void main()
 	vec3 upColor = vec3(0.2f, 0.35f, 0.75f);
 	vec3 downColor = vec3(0.65f, 0.65f, 0.65f);
 	color = vec4(mix(downColor, upColor, vec3(mixAlpha, mixAlpha, mixAlpha)), 1.0f);
-    color = vec4(applyFog(scatteringVolume, vec3(0.0), vec3(gl_FragCoord.xy / scene.viewport, 1.0f)), 1.0f);
+    // color = vec4(applyFog(scatteringVolume, vec3(0.0), vec3(gl_FragCoord.xy / scene.viewport, 1.0f)), 1.0f);
+    vec3 fogColor = vec3(applyFog(scatteringVolume, vec3(0.0), vec3(gl_FragCoord.xy / scene.viewport, 1.0f)));
+    color = vec4(mix(fogColor, color.rgb, vec3(skyBlendRatio)), 1.0);
 }
