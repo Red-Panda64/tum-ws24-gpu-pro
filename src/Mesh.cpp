@@ -30,6 +30,7 @@ tga::Texture loadTex(tga::Interface& tgai, const std::string& file, bool normalM
 
 Mesh::Mesh(tga::Interface& tgai, const char* obj, const tga::VertexLayout& vertexLayout)
 {
+    static_cast<void>(vertexLayout);
     std::filesystem::path objPath = obj;
     std::string texturesPath = objPath.replace_extension().string();
     std::string albedoTexturePath = texturesPath + std::string("_albedo.png");

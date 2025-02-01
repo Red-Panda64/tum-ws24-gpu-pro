@@ -4,7 +4,7 @@
 #include "FogVolumeGenerationPass.h"
 #include "util.h"
 
-FogVolumeGenerationPass::FogVolumeGenerationPass(tga::Interface &tgai, std::array<uint32_t, 3> resolution, const ShadowPass &sp) : tgai{&tgai}, resolution{resolution}, startTime{std::chrono::system_clock::now()}
+FogVolumeGenerationPass::FogVolumeGenerationPass(tga::Interface &tgai, std::array<uint32_t, 3> resolution, const ShadowPass &sp) : tgai{&tgai}, startTime{std::chrono::system_clock::now()}, resolution{resolution}
 {
     size_t textureMemorySize = resolution[0] * resolution[1] * resolution[2] * sizeof(glm::vec4);
     tga::StagingBuffer zeroStaging = tgai.createStagingBuffer({textureMemorySize});

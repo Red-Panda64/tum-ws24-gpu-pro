@@ -38,7 +38,18 @@ void Scene::prepareSceneUniformBuffer(tga::Interface& tgai)
 	sceneStagingBuffer = tgai.createStagingBuffer({ sizeof(SceneUniformBuffer) });
 	// Map it and store to update it in runtime
 	pSceneStagingBuffer = (SceneUniformBuffer*)(tgai.getMapping(sceneStagingBuffer));
-	new(pSceneStagingBuffer) SceneUniformBuffer { .nrPointLights = 0 };
+	new(pSceneStagingBuffer) SceneUniformBuffer {
+        .projectionView = glm::mat4(1.0f),
+        .invProjectionView = glm::mat4(1.0f),
+        .cameraPos = glm::vec3(0.0f),
+        .dirLight = { .direction = glm::vec3(0.0f, -1.0f, 0.0f), .color = glm::vec3(0.7f, 0.7f, 0.7f) },
+        .pointLights = {},
+        .zNear = 0.0f,
+        .zFar = 0.0f,
+        .nrPointLights = 0,
+        .ambientFactor = 0.0f,
+        .viewport = glm::uvec2(0, 0),
+    };
 	// The actual buffer in GPU
 	sceneBuffer = tgai.createBuffer({ tga::BufferUsage::uniform, sizeof(SceneUniformBuffer), sceneStagingBuffer });
 }
