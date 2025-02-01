@@ -8,6 +8,8 @@
 //#include <format>
 #include <sstream>
 #include <algorithm>
+#include <chrono>
+
 
 #include "imgui.h"
 
@@ -277,29 +279,68 @@ public:
     void update(float dt) { static_cast<void>(dt); }
 };
 
-class SunnyDemo : public Demo
+class AltarDemo : public Demo
 {
 public:
-    SunnyDemo()
+    AltarDemo()
     {
-        addInstance("coast_land", glm::scale(glm::mat4(1.0f), glm::vec3(100.0f, 30.0f, 100.0f)));
-        addInstance("rocks", glm::scale(glm::mat4(1.0f), glm::vec3(50.0, 50.0, 50.0f)));
+        altarPos = glm::vec3(0.0, 0.0, 0.0);
+        gnome1Pos = glm::vec3(20.0, 3.0, 30.0);
+        gnome2Pos = glm::vec3(20.0, 3.0, -30.0);
+        altarScale = 10.0f;
+        gnome1Scale = 100.0f;
+        gnome2Scale = 100.0f;
+        time = 0.0f;
+        addInstance("altar", makeTransform(altarPos, glm::vec3(altarScale)));
+        addInstance("gnome", makeTransform(gnome1Pos, glm::vec3(gnome1Scale), glm::vec3(0.0, M_PI_2, 0.0)));
+        addInstance("gnome", makeTransform(gnome2Pos, glm::vec3(gnome2Scale), glm::vec3(0.0, M_PI_2, 0.0)));
         settings = Settings{
-        .demoIdx = 2,
-        .lightDir = glm::vec3(1.0, -1.0, 0.0),
-        .lightColor = glm::vec3(1.0, 0.1, 0.0),
+        .demoIdx = 1,
+        .lightDir = glm::vec3(1.0, -0.032, -0.059),
+        .lightColor = glm::vec3(1.00, 0.106, 0.09),
         .historyFactor = 0.9,
         .density = 1.0,
         .constantDensity = 0.0,
-        .anisotropy = -0.3,
+        .anisotropy = -0.9,
         .absorption = 0.3,
-        .height = 0.1,
+        .height = 0.046,
         .noise = true,
-        .skyBlendRatio = 0.5
+        .skyBlendRatio = 0.0
         };
     }
 
-    void update(float dt) { static_cast<void>(dt); }
+    void update(float dt) 
+    {   
+        tga::StagingBuffer sb;
+        tga::Buffer tb; // not needed
+        size_t size;
+        glm::mat4* pSb;
+        time += dt;
+        float offset = 0.05f * glm::sin(0.1f * glm::radians(time));
+        // Altar Move
+        altarPos.y += offset;
+        std::tie(sb, tb, size) = uploads[0];
+        pSb = (glm::mat4*)(tgai.getMapping(sb));
+        *pSb = makeTransform(altarPos, glm::vec3(altarScale));
+        // Gnome 1 Move
+        gnome1Pos.y += offset;
+        std::tie(sb, tb, size) = uploads[1];
+        pSb = (glm::mat4*)(tgai.getMapping(sb));
+        *pSb = makeTransform(gnome1Pos, glm::vec3(gnome1Scale), glm::vec3(0.0, M_PI_2, 0.0));
+        // Gnome 2 Move
+        gnome2Pos.y += offset;
+        std::tie(sb, tb, size) = uploads[2];
+        pSb = (glm::mat4*)(tgai.getMapping(sb));
+        *pSb = makeTransform(gnome2Pos, glm::vec3(gnome2Scale), glm::vec3(0.0, M_PI_2, 0.0));
+    }
+public:
+    glm::vec3 altarPos; 
+    glm::vec3 gnome1Pos;
+    glm::vec3 gnome2Pos;
+    float altarScale;
+    float gnome1Scale;
+    float gnome2Scale;
+    float time;
 };
 
 double getDeltaTime()
@@ -379,7 +420,7 @@ void setupDemos() {
     currentDemo = demos.back().get();
     settings = currentDemo->settings;
     demos.emplace_back(std::make_unique<GnomeDemo>());
-    demos.emplace_back(std::make_unique<SunnyDemo>());
+    demos.emplace_back(std::make_unique<AltarDemo>());
 }
 
 bool handleDemoChange(int idx) {

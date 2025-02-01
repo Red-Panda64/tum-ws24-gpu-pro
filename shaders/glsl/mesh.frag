@@ -196,8 +196,16 @@ void main()
 {
 	//Fundamental variables
 	vec3 albedo = pow(texture(albedoMap, vIn.uv).rgb, vec3(2.2f)); // Map albedo from sRGB to linear as we will do our light computation in linear space
+	/*
+		Our metal, roughness and ao textures comes in either two formats:
+			- 3 component black and white same intensity in all the channels. In this case, fetching any channel suffices.
+			- Packed texture that stores ao-metallic-roughness in rgb channels in order. In that case, we split those rgb channels into their own textures. As other channels will be zero in the splitted case,
+			each value should be fetched from the corresponding channel.
+
+			So, we are fetching in ao-metal-roughness from rgb channels as it covers both possibilites.
+	*/
 	float metallic = texture(metallicMap, vIn.uv).b;
-	float roughness = texture(roughnessMap, vIn.uv).r;
+	float roughness = texture(roughnessMap, vIn.uv).g;
 	float ao = texture(aoMap, vIn.uv).r;
 
 	vec3 N = fetchNormalFromMap();
