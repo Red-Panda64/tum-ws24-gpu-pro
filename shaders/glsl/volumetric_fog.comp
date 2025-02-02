@@ -152,14 +152,8 @@ uint hash3(uvec3 cell) {
 
 vec3 getSunLightingRadiance(vec3 worldPosition, vec3 viewDir, float anisotropy)
 {
-    float shadow = getShadowValue(lightPV, shadowMap, vec4(worldPosition, 1.0f), -0.0005f);
     float sunPhaseFunction = getPhaseFunction(dot(dirLight.direction, viewDir), anisotropy);
-    return shadow * dirLight.color * sunPhaseFunction;
-}
-
-float shadow(vec3 worldPosition, vec3 viewDir, float anisotropy)
-{
-    return getShadowValue(lightPV, shadowMap, vec4(worldPosition, 1.0f), 0.001f);
+    return dirLight.color * sunPhaseFunction;
 }
 
 vec3 getAmbient(vec3 worldPosition, vec3 viewDir, float anisotropy)
@@ -208,7 +202,8 @@ void main()
 
     vec3 lighting = vec3(0.0f);
 
-    lighting += getSunLightingRadiance(worldSpacePos, viewDir, anisotropy);
+    float shadow = getShadowValue(lightPV, dirLight.direction, shadowMap, vec4(worldSpacePos, 1.0f), viewDir, -0.0005f);
+    lighting += shadow * getSunLightingRadiance(worldSpacePos, viewDir, anisotropy);
     lighting += getAmbient(worldSpacePos, viewDir, anisotropy);
     // TODO: Add point light(s)
     //lighting += GetLocalLightsRadiance(worldSpacePos, viewDir, anisotropy);

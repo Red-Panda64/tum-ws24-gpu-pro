@@ -168,7 +168,8 @@ vec3 computeIrradiance(vec3 N, vec3 V, vec3 albedo, vec3 F0, float roughness, fl
 	vec3 L = normalize(-scene.dirLight.direction);
 	vec3 H = normalize(V + L);
 	// Directional lights has a constant radiance which is their radiant flux (light color). 
-	vec3 radiance = scene.dirLight.color * getShadowValue(shadower.lightPV, shadowMap, vec4(vIn.fragWorldPos, 1.0f), 0.0005f);
+
+	vec3 radiance = scene.dirLight.color * getShadowValue(shadower.lightPV, L, shadowMap, vec4(vIn.fragWorldPos, 1.0f), N, 0.00025f);
 	Lo += computeCookTorranceReflectance(N, V, L, H, radiance, albedo, F0, roughness, metallic);
 
 	// Point-Light Irradiance

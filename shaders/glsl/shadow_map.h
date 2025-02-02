@@ -1,6 +1,7 @@
 // can't use shadow sampler unfortunately, TGA does not expose the depth textures
-float getShadowValue(mat4 lightPV, sampler2D shadowMap, vec4 worldPosition, float bias) {
-    // TODO: slope dependent bias
+float getShadowValue(mat4 lightPV, vec3 lightDir, sampler2D shadowMap, vec4 worldPosition, vec3 worldNormal, float bias) {
+    bias = max(bias * 5.0 * (1.0 - abs(dot(lightDir, worldNormal))), bias);
+
     vec4 lightspacePositionH = lightPV * worldPosition;
     vec3 lightspacePosition = lightspacePositionH.xyz / lightspacePositionH.w;
     if(lightspacePosition.z >= 1.0f) {
