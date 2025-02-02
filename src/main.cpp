@@ -241,13 +241,13 @@ public:
         settings = Settings{
         .demoIdx = 0,
         .lightDir = glm::vec3(1.0, -1.0, 0.0),
-        .lightColor = glm::vec3(0.7, 0.7, 0.7),
+        .lightColor = glm::vec3(1.0, 0.7, 0.2),
         .historyFactor = 0.9,
-        .density = 0.5,
-        .constantDensity = 0.5,
+        .density = 1.0,
+        .constantDensity = 0.175,
         .anisotropy = -0.3,
         .absorption = 0.3,
-        .height = 0.1,
+        .height = 0.05,
         .noise = true,
         .skyBlendRatio = 1.0
         };
