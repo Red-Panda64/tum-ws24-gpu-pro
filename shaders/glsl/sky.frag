@@ -44,14 +44,12 @@ layout(location = 0) out vec4 color;
 
 void main()
 {
-	vec3 viewDirUN = vIn.fragWorldPos - scene.camPos;
-	float normalizedY = viewDirUN.y / length(viewDirUN);
+    vec3 viewDirUN = vIn.fragWorldPos - scene.camPos;
+    float normalizedY = viewDirUN.y / length(viewDirUN);
     float mixAlpha = smoothstep(0.0, 1.0, normalizedY * 0.5f + 0.25f);
     mixAlpha = 1.0f - pow(1.0f - mixAlpha, 100.0f);
-	vec3 upColor = vec3(0.2f, 0.35f, 0.75f);
-	vec3 downColor = vec3(0.65f, 0.65f, 0.65f);
-	color = vec4(mix(downColor, upColor, vec3(mixAlpha, mixAlpha, mixAlpha)), 1.0f);
-    // color = vec4(applyFog(scatteringVolume, vec3(0.0), vec3(gl_FragCoord.xy / scene.viewport, 1.0f)), 1.0f);
-    vec3 fogColor = vec3(applyFog(scatteringVolume, vec3(0.0), vec3(gl_FragCoord.xy / scene.viewport, 1.0f)));
-    color = vec4(mix(fogColor, color.rgb, vec3(skyBlendRatio)), 1.0);
+    vec3 upColor = vec3(0.2f, 0.35f, 0.75f);
+    vec3 downColor = vec3(0.65f, 0.65f, 0.65f);
+    vec3 skyColor = mix(downColor, upColor, vec3(mixAlpha, mixAlpha, mixAlpha));
+    color = vec4(applyFog(scatteringVolume, mix(vec3(0.0), skyColor, vec3(skyBlendRatio)), vec3(gl_FragCoord.xy / scene.viewport, 1.0f)), 1.0f);
 }
