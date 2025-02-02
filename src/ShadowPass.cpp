@@ -6,8 +6,9 @@ static glm::vec3 dehomogenize(const glm::vec4 v) {
 }
 
 ShadowPass::ShadowPass(tga::Interface &tgai, std::array<uint32_t, 2> resolution, const tga::VertexLayout &vertexLayout) : tgai{&tgai} {
-    hShadowMap = tgai.createTexture({resolution[0], resolution[1], tga::Format::r32_sfloat, tga::SamplerMode::nearest,
-                     tga::AddressMode::clampBorder}); // TODO: how to set border color?
+    tga::TextureInfo texInfo = {resolution[0], resolution[1], tga::Format::r32_sfloat, tga::SamplerMode::nearest, tga::AddressMode::clampBorder};
+    texInfo.borderColor = tga::BorderColor::FloatOpaqueWhite;
+    hShadowMap = tgai.createTexture(texInfo);
 
     auto shadow_vs = tga::loadShader("../shaders/shadow_vert.spv", tga::ShaderType::vertex, tgai);
     auto shadow_fs = tga::loadShader("../shaders/shadow_frag.spv", tga::ShaderType::fragment, tgai);
