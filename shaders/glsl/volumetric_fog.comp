@@ -166,20 +166,17 @@ void main()
     if(any(greaterThanEqual(gl_GlobalInvocationID, resolution))) {
         return;
     }
-    // bool reprojectionOn = g_VolumetricFogReprojectionOn > 0.5f;
     bool reprojectionOn = historyFactor > 0.0f;
     vec3 currFrameJitter = reprojectionOn ? (POISSON_SAMPLES[(hash(frameNumber ^ hash3(gl_GlobalInvocationID))) % SAMPLE_NUM] - 0.5f) : vec3(0.0f);
 
     vec3 screenCoords = ndcFromThreadID(max(vec3(gl_GlobalInvocationID) + currFrameJitter, 0.0f), resolution);
     float linearDepth = volumeZPosToDepth(screenCoords.z);
     float layerThickness = volumeZPosToDepth(screenCoords.z + 1.0f / float(resolution.z)) - linearDepth;
-    // Our scene is at a much greater scale with much more fog range, hence the units are off
     layerThickness *= 0.01f;
 
     vec3 worldSpacePos = worldPositionFromNdcCoords(screenCoords.xy, linearDepth);
 
     float dustDensity = calculateDensityFunction(worldSpacePos);
-    // float scattering = g_VolumetricFogFinalScattering * (0.1f + dustDensity) * layerThickness;
     float scattering = (constantDensity + dustDensity) * layerThickness;
     float absorption = absorptionFactor * layerThickness;
     vec3 fogAlbedo = vec3(0.8f, 0.8f, 0.7f);
