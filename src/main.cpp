@@ -249,7 +249,7 @@ public:
         .absorption = 0.3,
         .height = 0.1,
         .noise = true,
-        .skyBlendRatio = 0.1
+        .skyBlendRatio = 1.0
         };
     }
 
@@ -272,7 +272,7 @@ public:
         .absorption = 0.3,
         .height = 0.1,
         .noise = true,
-        .skyBlendRatio = 0.1
+        .skyBlendRatio = 1.0
         };
     }
 
@@ -524,7 +524,7 @@ int main(int argc, const char *argv[])
     constexpr uint32_t SHADOW_MAP_RESX = 4096;
     constexpr uint32_t SHADOW_MAP_RESY = 4096;
     ShadowPass sp{ tgai, { SHADOW_MAP_RESX, SHADOW_MAP_RESY }, vertexLayout };
-    FogVolumeGenerationPass fp {tgai, { 256, 256, 256 }, sp};
+    FogVolumeGenerationPass fp {tgai, { 512, 256, 256 }, sp};
 
     // Create the Render pass
     auto rpInfo = tga::RenderPassInfo{vs, fs, win}
@@ -664,7 +664,7 @@ int main(int argc, const char *argv[])
         processInputs(win, scene, dt);
         scene.setDirLight(glm::normalize(settings.lightDir), settings.lightColor);
         currentDemo->update(dt);
-        sp.update(scene, 200.0f);
+        sp.update(scene, 100.0f);
         fp.update(scene, frameNumber++, settings.historyFactor, settings.density, settings.constantDensity, settings.anisotropy, settings.absorption, settings.height, settings.noise, settings.skyBlendRatio);
         auto nf = tgai.nextFrame(win);
         auto& cmd = cmdBuffers[nf];
