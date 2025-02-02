@@ -26,11 +26,11 @@
 layout(local_size_x=4, local_size_y=4, local_size_z=1) in;
 
 /* x,y,z: inscattering, a: extinction */
-layout(rgba32f, set = 0, binding = 0) uniform readonly image3D inVolume;
+layout(rgba32f, set = 0, binding = 0) uniform readonly restrict image3D inVolume;
 /* x,y,z: inscattering, a: extinction
  * both accumulated front to back
  */
-layout(rgba32f, set = 0, binding = 1) uniform writeonly image3D accVolume;
+layout(rgba32f, set = 0, binding = 1) uniform writeonly restrict image3D accVolume;
 layout(set = 0, binding = 2) uniform VolumeGenerationInputs
 {
     uvec3 resolution;
