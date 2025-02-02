@@ -256,15 +256,22 @@ public:
     void update(float dt) { static_cast<void>(dt); }
 };
 
-class GnomeDemo : public Demo {
+class WindowDemo : public Demo {
 public:
-    GnomeDemo() {
-        addInstance("plane", glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
-        addInstance("gnome", makeTransform(glm::vec3(0.0, 0.0, 0.0), glm::vec3(15.0)));
+    WindowDemo() {
+        addInstance("plane", glm::scale(glm::mat4(1.0f), glm::vec3(200.0f)));
+        constexpr int N = 8;
+        constexpr float dPhi = 2.0f * M_PI / static_cast<float>(N);
+        float phi = 0.0;
+        addInstance("ceiling", makeTransform(glm::vec3(0.0, 20.0, 0.0), glm::vec3(24.0), glm::vec3(0.0, 0.0, 0.0)));
+        for(int i = 0; i < N; i++) {
+            addInstance("window", makeTransform(glm::vec3(24.0 * sin(phi), 0.0, 24.0 * cos(phi)), glm::vec3(2.0), glm::vec3(0.0, phi, 0.0)));
+            phi += dPhi;
+        }
         settings = Settings{
         .demoIdx = 1,
         .lightDir = glm::vec3(1.0, -1.0, 0.0),
-        .lightColor = glm::vec3(0.7, 0.7, 0.7),
+        .lightColor = glm::vec3(0.9, 0.9, 0.3),
         .historyFactor = 0.9,
         .density = 0.5,
         .constantDensity = 0.5,
@@ -419,7 +426,7 @@ void setupDemos() {
     demos.emplace_back(std::make_unique<CitadelDemo>());
     currentDemo = demos.back().get();
     settings = currentDemo->settings;
-    demos.emplace_back(std::make_unique<GnomeDemo>());
+    demos.emplace_back(std::make_unique<WindowDemo>());
     demos.emplace_back(std::make_unique<AltarDemo>());
 }
 
@@ -664,7 +671,7 @@ int main(int argc, const char *argv[])
         processInputs(win, scene, dt);
         scene.setDirLight(glm::normalize(settings.lightDir), settings.lightColor);
         currentDemo->update(dt);
-        sp.update(scene, 100.0f);
+        sp.update(scene, 200.0f);
         fp.update(scene, frameNumber++, settings.historyFactor, settings.density, settings.constantDensity, settings.anisotropy, settings.absorption, settings.height, settings.noise, settings.skyBlendRatio);
         auto nf = tgai.nextFrame(win);
         auto& cmd = cmdBuffers[nf];
