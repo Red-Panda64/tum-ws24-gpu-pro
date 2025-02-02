@@ -23,7 +23,7 @@
     SOFTWARE.
 */
 
-layout(local_size_x=4, local_size_y=4, local_size_z=1) in;
+layout(local_size_x=8, local_size_y=8, local_size_z=1) in;
 
 /* x,y,z: inscattering, a: extinction */
 layout(rgba32f, set = 0, binding = 0) uniform readonly restrict image3D inVolume;
@@ -58,10 +58,42 @@ void main() {
     //currentSliceValue = AccumulateScattering(vec4(0.0, 0.0, 0.0, 0.0), currentSliceValue);
     postprocessAndStore(ivec3(gl_GlobalInvocationID.xy, 0), currentSliceValue);
 
-    for (int z = 1; z < int(resolution.z); z++)
+    // no gotos, no weird switch nesting -> sadly no Duff's device
+    uint consecutive = resolution.z & 7;
+
+    for (uint z = 1; z < consecutive; z++)
     {
         vec4 nextValue = imageLoad(inVolume, ivec3(gl_GlobalInvocationID.xy, z)).rgba;
         currentSliceValue = AccumulateScattering(currentSliceValue, nextValue);
         postprocessAndStore(ivec3(gl_GlobalInvocationID.xy, z), currentSliceValue);
+    }
+
+    for (uint z = consecutive; z < resolution.z; z += 8)
+    {
+        vec4 nextValue1 = imageLoad(inVolume, ivec3(gl_GlobalInvocationID.xy, z    )).rgba;
+        vec4 nextValue2 = imageLoad(inVolume, ivec3(gl_GlobalInvocationID.xy, z + 1)).rgba;
+        vec4 nextValue3 = imageLoad(inVolume, ivec3(gl_GlobalInvocationID.xy, z + 2)).rgba;
+        vec4 nextValue4 = imageLoad(inVolume, ivec3(gl_GlobalInvocationID.xy, z + 3)).rgba;
+        vec4 nextValue5 = imageLoad(inVolume, ivec3(gl_GlobalInvocationID.xy, z + 4)).rgba;
+        vec4 nextValue6 = imageLoad(inVolume, ivec3(gl_GlobalInvocationID.xy, z + 5)).rgba;
+        vec4 nextValue7 = imageLoad(inVolume, ivec3(gl_GlobalInvocationID.xy, z + 6)).rgba;
+        vec4 nextValue8 = imageLoad(inVolume, ivec3(gl_GlobalInvocationID.xy, z + 7)).rgba;
+ 
+        currentSliceValue = AccumulateScattering(currentSliceValue, nextValue1);
+        postprocessAndStore(ivec3(gl_GlobalInvocationID.xy, z    ), currentSliceValue);
+        currentSliceValue = AccumulateScattering(currentSliceValue, nextValue2);
+        postprocessAndStore(ivec3(gl_GlobalInvocationID.xy, z + 1), currentSliceValue);
+        currentSliceValue = AccumulateScattering(currentSliceValue, nextValue3);
+        postprocessAndStore(ivec3(gl_GlobalInvocationID.xy, z + 2), currentSliceValue);
+        currentSliceValue = AccumulateScattering(currentSliceValue, nextValue4);
+        postprocessAndStore(ivec3(gl_GlobalInvocationID.xy, z + 3), currentSliceValue);
+        currentSliceValue = AccumulateScattering(currentSliceValue, nextValue5);
+        postprocessAndStore(ivec3(gl_GlobalInvocationID.xy, z + 4), currentSliceValue);
+        currentSliceValue = AccumulateScattering(currentSliceValue, nextValue6);
+        postprocessAndStore(ivec3(gl_GlobalInvocationID.xy, z + 5), currentSliceValue);
+        currentSliceValue = AccumulateScattering(currentSliceValue, nextValue7);
+        postprocessAndStore(ivec3(gl_GlobalInvocationID.xy, z + 6), currentSliceValue);
+        currentSliceValue = AccumulateScattering(currentSliceValue, nextValue8);
+        postprocessAndStore(ivec3(gl_GlobalInvocationID.xy, z + 7), currentSliceValue);
     }
 }
