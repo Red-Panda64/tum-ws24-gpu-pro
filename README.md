@@ -6,6 +6,8 @@ Improved quality at a low sampling rate is achieved by temporal reprojection.
 <img src="Citadel2.png" alt="The inside of the same citadel, looking at the god rays from the side. Two sentinel gnomes watch over it." width="500"/>
 
 # Build & Run
+**&#x26A0; This repository currently can't be built without internal access to TUM's gitlab, which hosts chair I15's TGA Vulkan library. We might migrate to pure Vulkan, when we get to it. &#x26A0;**
+
 After cloning the repository for the first time, run:
 ```
 git submodule update --init --recursive
